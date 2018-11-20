@@ -13,21 +13,26 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 crime = read.csv('crime_v2.csv')
 # Delete the 6 empty rows at the end
+crime[92:100,]
 crime = crime[1:91, ]
 
-# Convert columns to factors.
+# Convert columns to factors and logical.
 crime$county = as.factor(crime$county)
 crime$year = as.factor(crime$year)
-crime$west = as.factor(crime$west)
-crime$central = as.factor(crime$central)
-crime$urban = as.factor(crime$urban)
+crime$west = as.logical(crime$west)
+crime$central = as.logical(crime$central)
+crime$urban = as.logical(crime$urban)
 
 # Fix prbconv, convert from factor to numeric
+summary(crime$prbconv)
 crime$prbconv = as.numeric(crime$prbconv)
+
+# county 193 is duplidated, remove one
+crime[crime$county == 193, ]
+crime = crime[-c(89), ]
 
 summary(crime)
 
-# Note county 192 occurs twice
 
 
 ```
