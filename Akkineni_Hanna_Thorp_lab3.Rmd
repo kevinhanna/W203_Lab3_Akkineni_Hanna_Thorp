@@ -33,7 +33,50 @@ crime = crime[-c(89), ]
 
 summary(crime)
 
+```
 
+## Variables:
+
+### Target
+crmrte  
+
+### Label
+county
+
+### Segregates:
+density  
+west  
+central  
+urban   
+Likely relationship with density  
+
+### Cost of doing crime:
+prbconv  
+prbpris  
+avgsen  
+prbarr  
+polpc (likely related to prbconv)  
+
+
+
+```{r}
+plot(crime$crmrte)
+```
+
+```{r}
+hist(crime$crmrte)
+```
+
+```{r}
+model1 = lm(crmrte ~ prbarr + polpc + density, data = crime)
+(model1$coefficients)
 
 ```
+
+
+## Steps
+Leverage (and Influence if required)  
+Goodness-of-Fit : AIC  
+Endoginaity  
+Omitted variable bias  
 
