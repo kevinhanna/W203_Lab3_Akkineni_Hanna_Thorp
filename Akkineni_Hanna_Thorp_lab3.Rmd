@@ -1,0 +1,34 @@
+---
+title: 'Lab 3: Reducing Crime'
+author: "C. Akkineni, A. Thorp, K. Hanna"
+date: "November 27, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Stage 1: Draft Report
+```{r}
+crime = read.csv('crime_v2.csv')
+# Delete the 6 empty rows at the end
+crime = crime[1:91, ]
+
+# Convert columns to factors.
+crime$county = as.factor(crime$county)
+crime$year = as.factor(crime$year)
+crime$west = as.factor(crime$west)
+crime$central = as.factor(crime$central)
+crime$urban = as.factor(crime$urban)
+
+# Fix prbconv, convert from factor to numeric
+crime$prbconv = as.numeric(crime$prbconv)
+
+summary(crime)
+
+# Note county 192 occurs twice
+
+
+```
+
