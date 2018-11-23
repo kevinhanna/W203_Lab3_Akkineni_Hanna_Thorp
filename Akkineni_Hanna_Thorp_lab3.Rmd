@@ -1,15 +1,26 @@
 ---
-title: 'Lab 3: Reducing Crime'
+title: 'DRAFT: Lab 3: Reducing Crime'
 author: "C. Akkineni, A. Thorp, K. Hanna"
 date: "November 27, 2018"
-output: pdf_document
+output:
+    pdf_document:
+    toc: true
+    toc_depth: 2
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Stage 1: Draft Report
+\tableofcontents 
+<!--
+\listoffigures
+\listoftables
+-->
+\newpage
+
+# Stage 1: Draft Report
 ```{r}
 crime = read.csv('crime_v2.csv')
 # Delete the 6 empty rows at the end
@@ -35,36 +46,37 @@ summary(crime)
 
 ```
 
+# Preliminary Infomations
 ## Variables:
 
-### Target
-crmrte  
+1. Target
++ crmrte  
 
-### Label
-county
+2. Label
++ county
 
-### Segregates:
-density  
-west  
-central  
-urban   
-Likely relationship with density  
+3. Segregates: (my own word, just things that can segregate the data).  Counties can belong to 0 or more from west, central and urban.
++ density (likely related to others, especially urban)  
++ west  
++ central  
++ urban   
+  
 
-### Cost of doing crime:
-prbconv  
-prbpris  
-avgsen  
-prbarr  
-polpc (likely related to prbconv)  
+4. Cost of doing crime:  
++ prbconv  
++ prbpris  
++ avgsen  
++ prbarr  
++ polpc (likely related to prbconv)  
 
 
 
-```{r}
-plot(crime$crmrte)
+```{r} 
+plot(crime$crmrte, ylab = 'crimes committed per person')
 ```
 
 ```{r}
-hist(crime$crmrte)
+hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
 ```
 
 ```{r}
@@ -74,9 +86,24 @@ model1 = lm(crmrte ~ prbarr + polpc + density, data = crime)
 ```
 
 
-## Steps
+## Steps for evaluating variables
 Leverage (and Influence if required)  
 Goodness-of-Fit : AIC  
 Endoginaity  
 Omitted variable bias  
+MSE  
+E[theta hat] = theta
+
+```{r}
+sum(c(crime$urban, crime$west))
+```
+
+
+# 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
+
+# 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
+
+# 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
+
+# 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
 
