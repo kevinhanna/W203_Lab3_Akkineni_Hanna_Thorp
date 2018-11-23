@@ -29,8 +29,8 @@ determinants of crime and to help with policy suggestions that are applicable to
 library(knitr)
 library(kableExtra)
 
-codebook <- read.csv('codebook.csv')
-crime <- read.csv('crime_v2.csv')
+codebook <- read.csv('~/Coding/W203_Lab3_Akkineni_Hanna_Thorp/codebook.csv')
+crime <- read.csv('~/Coding/W203_Lab3_Akkineni_Hanna_Thorp/crime_v2.csv')
 
 # Convert columns to factors and logical.
 crime$county <- as.factor(crime$county)
@@ -48,7 +48,7 @@ crime$logcrmrte <- log(crime$crmrte)
 
 ##  Data Summary
 
-We were provided with a dataset of crime statistics for a selection of counties in North Carolina. After performing data clean up (outlined below) the data set contained 90 county observationseach having 25 variables (onlined in the codebook found in Appendix A).
+We were provided with a dataset of crime statistics for a selection of counties in North Carolina. After performing data clean up (outlined below) the data set contained 90 county observations each having 25 variables (onlined in the codebook found in Appendix A).
 
 <!--
 From the assignment to incorporate above:
@@ -79,7 +79,7 @@ crime$prbconv = as.numeric(as.character(crime$prbconv))
 
 ```
 
-We found two identical observations for county 193.  There is no logical reason to have two observations in this cross-sectional data, and given the data in both observations are identical we feel strongly that removing one of these two observations can only benefit our analysis. 
+We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional data, so we feel strongly that removing one of these two observations can only benefit our analysis. 
 ```{r}
 # county 193 is duplidated, remove one
 crime = crime[!duplicated(crime), ]
@@ -125,8 +125,176 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 (Bring Naga's analysis over here after)
 
+<<<<<<< HEAD
+```{r}
+hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
+shapiro.test(crime$crmrte)
+hist(log(crime$crmrte), xlab = 'log of crimes committed per person', main = 'Histogram of Log of crimes committed per person')
+shapiro.test(log(crime$crmrte))
+```
+Log is preferable - both for interpretation and for better adhering to modeling assumptions
+
+```{r}
+hist(crime$prbarr, xlab = 'probability of arrest', main = 'Histogram of probability of arrest')
+shapiro.test(crime$prbarr)
+hist(log(crime$prbarr), xlab = 'log of probability of arrest', main = 'Histogram of Log of probability of arrest')
+shapiro.test(log(crime$prbarr))
+```
+Log is preferable - both for interpretation and for better adhering to modeling assumptions
+
+```{r}
+hist(crime$prbconv, xlab = 'probability of conviction', main = 'Histogram of probability of conviction')
+shapiro.test(crime$prbconv)
+hist(log(crime$prbconv), xlab = 'log of probability of conviction', main = 'Histogram of Log of probability of conviction')
+shapiro.test(log(crime$prbconv))
+```
+Log is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
+
+```{r}
+hist(crime$prbpris, xlab = 'probability of prison', main = 'Histogram of probability of prison')
+shapiro.test(crime$prbpris)
+hist(log(crime$prbpris), xlab = 'log of probability of prison', main = 'Histogram of Log of probability of prison')
+shapiro.test(log(crime$prbpris))
+```
+From an interpretation standpoint, the logged version is preferable, although from an modeling assumption standpoint, the unlogged version is preferable. 
+
+```{r}
+hist(crime$avgsen, xlab = 'average sentence', main = 'Histogram of average sentence')
+shapiro.test(crime$avgsen)
+hist(log(crime$avgsen), xlab = 'log of average sentence', main = 'Histogram of Log of average sentence')
+shapiro.test(log(crime$avgsen))
+```
+The logged version is preferable from both an interpretation and modeling assumption standpoint.
+
+```{r}
+hist(crime$polpc, xlab = 'police as percent of population', main = 'Histogram of police as percent of population')
+shapiro.test(crime$polpc)
+hist(log(crime$polpc), xlab = 'log of police as percent of population', main = 'Histogram of Log of police as percent of population')
+shapiro.test(log(crime$polpc))
+```
+Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
+
+```{r}
+hist(crime$pctymle, xlab = 'percent of population that are yound males', main = 'Histogram of percent of population that are yound males')
+shapiro.test(crime$pctymle)
+hist(log(crime$pctymle), xlab = 'log of percent of population that are yound males', main = 'Histogram of Log of percent of population that are yound males')
+shapiro.test(log(crime$pctymle))
+```
+Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
 \newpage
+
+# Preliminary Infomations (not intended to be left in)
+
+## From the assignment:
++ 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
++ 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
++ 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
++ 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
+
+## Variables:
+
+1. Target
++ crmrte  
+
+2. Label
++ county
+
+3. Geographic: (my own word, just things that can segregate the data).  Counties can belong to 0 or more from west, central and urban.
++ density (likely related to others, especially urban)  
++ west  
++ central  
++ urban   
+
+4. Certainty of Punishment:  
++ prbarr 
++ prbconv  
+
+5. Severity of Punishment:
++ prbpris  
++ avgsen  
+
+Other 
++ polpc (likely related to certainty of punishment)  
+
+We haven't really addressed what kinds of crimes are being talked about. Should we assume that it is violent crimes and drug crimes? (i.e. not white collar or other non-violent) If we also assume that some crimes are committed by rational actors weighing gains versus losses, we would expect crimes like theft and drug dealing to be negatively correlated with wealth (i.e. higher opportunity cost for wealthy people to engage in those sorts of crimes - and by extension linked crimes like manslaughter (I'm thinking an attempted theft or drug deal gone wrong). 
+
+The idea here is that higher real wages reduce crime propensity. To operationalize that, ideally we would have some idea of cost of living and nominal wages (particularly in sectors that are potential alternatives to those who typically engage in violent crime and drug dealing - those without high educational barriers to entry - construction, driving, retail).
+
+In addition to pure wealth, there are other ideas like social capital and a sense of belonging/rootedness that we can imagine would be associated with lower propensity to commit crimes. We could assess this through variables like homeownership, rate of volunteering, rates of religious attendance, or the proportion of mothers that are single and have sole custody. 
+
+Another thought is that educated people are also less likely to committ these kinds of crimes. Another relevant variable may be average years of education, proportion of population with at least a high school diploma, at least a bachelor's, or one or more graduate degrees. Related to this category as well as the previous notion of social belonging, the rate of absenteeism among high school students could also reflect these two notions. 
+
+Another idea is that proximity to instruments of crime also increases propensity to commit crimes. The rate of gun ownership, or - even better - the rate of illicit gun ownership would be useful here.
+
+Another idea is that crimes are more likely as inequality is high between neighboring locations - creating a threshold upon which economic and extension crimes become focused. This is hard to assess without better location data
+
+And another idea is that organized crime tends to be more persistent than isolated instances of crime. So, to the extent possible, it would be useful to have a measure of gang/mob/etc membership as a percent of the population.
+
+```{r}
+mod1 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen, data=crime)
+summary(mod1)
+mod1_log <- lm(log(crmrte) ~ log(prbarr) + log(prbconv) + log(prbpris) + log(avgsen), data=crime)
+summary(mod1_log)
+```
+```{r}
+mod2 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen + polpc, data=crime)
+summary(mod2)
+mod2_log <- lm(log(crmrte) ~ log(prbarr) + log(prbconv) + log(prbpris) + log(avgsen) + log(polpc), data=crime)
+summary(mod2_log)
+```
+I disagree with the inclusion of police percentage in this regression. While all else equal, we may expect more police to result in a deterrent, we can only assess this against an unobservable counterfactual - how the same location would have been impacted had more police or less police been assigned there. This would be possible to address experimentally, but not observationally. The problem is that places with increasing crime rates are subsequently likely to increase police presence, while those with decreasing crime rates are likely to decrease police presence (for budgetary reasons). 
+
+```{r}
+mod3 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen + density, data=crime)
+summary(mod3)
+mod3_log <- lm(log(crmrte) ~ log(prbarr) + log(prbconv) + log(prbpris) + log(avgsen) + log(density), data=crime)
+summary(mod3_log)
+```
+I also disagree with this simplistic inclusion of density (if our goal is causation, not prediction). All else equal - density means more eyes looking around - which should mean less propensity to commit crime. There are likely other variables which better explain what many lazily associate with density. For example, thresholds of inequality, where extreme wealth exists right next to extreme poverty are more common in more dense locations. Additionally, more dense locations sometimes have less average social capital (perhaps again because of close proximity class differences) than less dense places. These are good instances of omitted variable bias. Since our goal is causation rather than prediction, we should be cautious in including density as an explanatory variable. 
+
+```{r}
+mod4 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen + pctymle, data=crime)
+summary(mod4)
+mod4_log <- lm(log(crmrte) ~ log(prbarr) + log(prbconv) + log(prbpris) + log(avgsen) + log(pctymle), data=crime)
+summary(mod4_log)
+```
+The inclusion of the percent of the population that is young and male, as expected, has a notable positive relationship with crime rate. The variable is only marginally significant though. I would argue that, since we are interested in causation, particularly in differentiating the effect of certainty of punishment from severity of punishment, we should include this variable so as to make the coefficients for certainty and severity of punishment less biased. 
+
+The logged version of this regression is not anywhere close to significant for the log(pctymle) variable.
+
+
+Interesting things to note after examining these regression approaches:
+
+1) The certainty of punishment is estimated much more consistently than any other variable. In every regression run, these variables have a clear, significant negative relationship with crime rate. This is a good basis upon which we can make policy recommendations
+    -Our policy recommendations focus on increasing the certainty of punishment in areas with low certainty of punishment now. Police departments need quality information in order to increase the certainty of punishment, so improving relationships with local people is a key recommendation. Additionally, locations with a low conviction rate could invest in more prosecutorial staff/better prosecutorial staff. 
+2) The severity of punishment seems to be much less consistent, with the sign flipping depending on the regression specification. In contrast to some people's expectations, most regressions show that the probability of going to prison is associated with a higher crime rate, rather than a lower one. One way of thinking about this is that prisons have become cultivators of more organized crime. Another way to think about it is prisons currently do little to change the person put in them for the better. Rather, prisoners associate all day every day with other prisoners - perhaps exchanging bad habits and temperaments and building social connections that may persist in and outside of prison. 
+3) Police presence and density are both useful predictors, though we believe that they actually obscure the causal relationship we desire to study. Police presence tends to increase along with crime and decrease as crime goes away. In other words, the direction of causality is likely reversed from what we have specified here. Secondly, density is a useful predictor, but we feel it does not contain causal information about crime rates. Rather density obscures more relevant but unobserved relationships with other factors such as proximal inequality.
+
+
+
+
+## Steps for evaluating variables
+Leverage (and Influence if required)  
+Goodness-of-Fit : AIC  
+Omitted variable bias  
+MSE  
+E[theta hat] = theta
+
+```{r}
+crime$urban + crime$west + crime$central
+crime$urban + crime$west
+crime$urban + crime$central
+crime$west + crime$central
+
+```
+
+=======
+>>>>>>> 798db4e62e6d541b8f06fdccace99016998e1114
+
+\newpage
+
+
 
 # Conclusion
 
