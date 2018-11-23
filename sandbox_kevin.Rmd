@@ -182,11 +182,11 @@ pctmin80 is positively correlated and mix is negatively correlated.  This is cou
 
 ```{r}
 # Demographics
-#foo5 = lm(crmrte ~ pctmin80 + mix + pctymle, data = crime)
+#foo5 = lm(crmrte ~ pctmin80 + pctymle, data = crime)
 #foo5$coefficients
 #vcov(foo5)
 
-foo5log = lm(logcrmrte ~pctmin80 + mix + pctymle, data = crime)
+foo5log = lm(logcrmrte ~pctmin80 + pctymle, data = crime)
 foo5log$coefficients
 #vcov(foo5log)
 
@@ -225,7 +225,7 @@ hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of cr
 ```
 
 ```{r}
-model1 <- lm(crmrte ~ prbarr + polpc + density, data = crime)
+model1 <- lm(logcrmrte ~ density + prbarr + polpc + wser + mix + pctmin80 + pctymle, data = crime)
 (model1$coefficients)
 
 ```
