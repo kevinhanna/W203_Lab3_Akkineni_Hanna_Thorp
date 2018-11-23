@@ -1,5 +1,5 @@
 ---
-title: 'DRAFT: Lab 3: Reducing Crime'
+title: 'DRAFT: Stage 1 (Lab 3: Reducing Crime)'
 author: "C. Akkineni, A. Thorp, K. Hanna"
 date: "November 27, 2018"
 output:
@@ -20,33 +20,117 @@ knitr::opts_chunk$set(echo = TRUE)
 -->
 \newpage
 
-# Stage 1: Draft Report
+# Introduction (Stage 1: Draft Report)
+
+The team has been hired to provide research for a political campaign and help the campaign understand the
+determinants of crime and to help with policy suggestions that are applicable to local government.  
+
 ```{r}
-crime = read.csv('crime_v2.csv')
-# Delete the 6 empty rows at the end
-crime[92:100,]
-crime = crime[1:91, ]
+library(knitr)
+library(kableExtra)
+
+codebook <- read.csv('codebook.csv')
+crime <- read.csv('crime_v2.csv')
 
 # Convert columns to factors and logical.
-crime$county = as.factor(crime$county)
-crime$year = as.factor(crime$year)
-crime$west = as.logical(crime$west)
-crime$central = as.logical(crime$central)
-crime$urban = as.logical(crime$urban)
+crime$county <- as.factor(crime$county)
+crime$year <- as.factor(crime$year)
+crime$west <- as.logical(crime$west)
+crime$central <- as.logical(crime$central)
+crime$urban <- as.logical(crime$urban)
+```
 
-# Fix prbconv, convert from factor to numeric
-summary(crime$prbconv)
-crime$prbconv = as.numeric(crime$prbconv)
+# Exploratory Data Analysis
 
-# county 193 is duplidated, remove one
-crime[crime$county == 193, ]
-crime = crime[-c(89), ]
+##  Data Summary
 
-summary(crime)
+We were provided with a dataset of crime statistics for a selection of counties in North Carolina. After performing data clean up (outlined below) the data set contained 90 county observationseach having 25 variables (onlined in the codebook found in Appendix A).
+
+<!--
+From the assignment to incorporate above:
+The data on convictions is
+taken from the prison and probation files of the North Carolina Department of Correction.
+
+The percent young male variable records the proportion of the population that is male and between the ages
+of 15 and 24. This variable, as well as percent minority, was drawn from census data.
+
+The number of police per capita was computed from the FBI’s police agency employee counts.
+
+The variables for wages in different sectors were provided by the North Carolina Employment Security
+Commission.
+-->
+
+### Data Clean Up
+
+#### Null Rows
+The dataset contained a an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We feel it is safe to remove these rows as they contain no data. 
+```{r}
+# Delete the 6 empty observations at the end, including the row with the apostrophe.
+# We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
+crime = crime[complete.cases(crime), ]
+
+# Fix prbconv which is a factor rather than numeric due to the apostrophe
+# Convert from factor to numeric 
+crime$prbconv = as.numeric(as.character(crime$prbconv))
 
 ```
 
-# Preliminary Infomations
+We found two identical observations for county 193.  There is no logical reason to have two observations in this cross-sectional data, and given the data in both observations are identical we feel strongly that removing one of these two observations can only benefit our analysis. 
+```{r}
+# county 193 is duplidated, remove one
+crime = crime[!duplicated(crime), ]
+
+```
+
+
+#### Concerns about data
+
+There are three probability columns in the given dataset. Check if any of the columns has invalid values - i.e., any of the columns have less than zero or greater than 1 values.
+
+```{r}
+#any(crime$prbarr<0 | crime$prbarr>1)
+#any(crime$prbconv<0 | crime$prbconv>1)
+#any(crime$prbpris<0 | crime$prbpris>1)
+
+#summary(crime$prbarr)
+#summary(crime$prbconv)
+
+
+summary(crime$prbarr)[c(1,6)]
+summary(crime$prbconv)[c(1,6)]
+summary(crime$prbpris)[c(1,6)]
+
+nrow(crime[(crime$prbarr<0 | crime$prbarr>1), c('county', 'prbarr')])
+nrow(crime[(crime$prbconv<0 | crime$prbconv>1), c('county', 'prbconv')])
+
+
+```
+
+##### prbarr (Probability of Arrest)
+We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  It is the only observation with an invalid value, we will treat this variable as valid, however do so with caution.  
+
+##### prbconv (Probability of Conviction)
+We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  We have little confidence in the veracity of this variable, and will not be performing further analysis.
+<!-- TODO: Make sure the above is still true before handing in -->
+
+
+
+
+
+## Univariate Analysis
+
+(Bring Naga's analysis over here after)
+
+\newpage
+
+# Preliminary Infomations (not intended to be left in)
+
+## From the assignment:
++ 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
++ 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
++ 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
++ 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
+
 ## Variables:
 
 1. Target
@@ -80,7 +164,7 @@ hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of cr
 ```
 
 ```{r}
-model1 = lm(crmrte ~ prbarr + polpc + density, data = crime)
+model1 <- lm(crmrte ~ prbarr + polpc + density, data = crime)
 (model1$coefficients)
 
 ```
@@ -89,21 +173,32 @@ model1 = lm(crmrte ~ prbarr + polpc + density, data = crime)
 ## Steps for evaluating variables
 Leverage (and Influence if required)  
 Goodness-of-Fit : AIC  
-Endoginaity  
 Omitted variable bias  
 MSE  
 E[theta hat] = theta
 
 ```{r}
-sum(c(crime$urban, crime$west))
+crime$urban + crime$west + crime$central
+crime$urban + crime$west
+crime$urban + crime$central
+crime$west + crime$central
+
 ```
 
 
-# 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
+\newpage
 
-# 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
+# Conclusion
 
-# 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
+From the assignment "Since you are restricted
+to ordinary least squares regression, omitted variables will be a major obstacle to your estimates. You should
+aim for causal estimates, while clearly explaining how you think omitted variables may affect your conclusions."
 
-# 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
+\newpage
+# Apendix A: Codebook
+
+```{r echo = FALSE, results = 'asis'}
+kable(codebook[, c(2,3,4)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
+  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
+```
 
