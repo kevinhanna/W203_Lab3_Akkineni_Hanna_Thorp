@@ -23,7 +23,7 @@ Basic setup and loading of data.
 # We use the stargazer package to display nice regression tables.
 library(stargazer)
 
-load("GPA1.rdata")
+load("gpa1.RData")
 head(data)
 ```
 

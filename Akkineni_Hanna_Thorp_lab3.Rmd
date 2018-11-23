@@ -1,5 +1,5 @@
 ---
-title: 'DRAFT: Stage 1 (Lab 3: Reducing Crime)'
+title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
 author: "C. Akkineni, A. Thorp, K. Hanna"
 date: "November 27, 2018"
 output:
@@ -38,6 +38,10 @@ crime$year <- as.factor(crime$year)
 crime$west <- as.logical(crime$west)
 crime$central <- as.logical(crime$central)
 crime$urban <- as.logical(crime$urban)
+
+# Create a log of the dependent variable
+crime$logcrmrte <- log(crime$crmrte)
+
 ```
 
 # Exploratory Data Analysis
@@ -120,70 +124,6 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 ## Univariate Analysis
 
 (Bring Naga's analysis over here after)
-
-\newpage
-
-# Preliminary Infomations (not intended to be left in)
-
-## From the assignment:
-+ 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
-+ 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
-+ 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
-+ 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
-
-## Variables:
-
-1. Target
-+ crmrte  
-
-2. Label
-+ county
-
-3. Segregates: (my own word, just things that can segregate the data).  Counties can belong to 0 or more from west, central and urban.
-+ density (likely related to others, especially urban)  
-+ west  
-+ central  
-+ urban   
-  
-
-4. Cost of doing crime:  
-+ prbconv  
-+ prbpris  
-+ avgsen  
-+ prbarr  
-+ polpc (likely related to prbconv)  
-
-
-
-```{r} 
-plot(crime$crmrte, ylab = 'crimes committed per person')
-```
-
-```{r}
-hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
-```
-
-```{r}
-model1 <- lm(crmrte ~ prbarr + polpc + density, data = crime)
-(model1$coefficients)
-
-```
-
-
-## Steps for evaluating variables
-Leverage (and Influence if required)  
-Goodness-of-Fit : AIC  
-Omitted variable bias  
-MSE  
-E[theta hat] = theta
-
-```{r}
-crime$urban + crime$west + crime$central
-crime$urban + crime$west
-crime$urban + crime$central
-crime$west + crime$central
-
-```
 
 
 \newpage

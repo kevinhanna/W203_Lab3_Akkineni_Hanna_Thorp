@@ -1,0 +1,248 @@
+---
+title: "Kevin's Sandbox"
+author: "Kevin Hanna"
+date: "November 23, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(car)
+
+codebook <- read.csv('codebook.csv')
+crime <- read.csv('crime_v2.csv')
+
+# Convert columns to factors and logical.
+crime$county <- as.factor(crime$county)
+crime$year <- as.factor(crime$year)
+crime$west <- as.logical(crime$west)
+crime$central <- as.logical(crime$central)
+crime$urban <- as.logical(crime$urban)
+
+# Create a log of the dependent variable
+crime$logcrmrte <- log(crime$crmrte)
+
+# Delete the 6 empty observations at the end, including the row with the apostrophe.
+# We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
+crime = crime[complete.cases(crime), ]
+
+# Fix prbconv which is a factor rather than numeric due to the apostrophe
+# Convert from factor to numeric 
+crime$prbconv = as.numeric(as.character(crime$prbconv))
+
+# county 193 is duplidated, remove one
+crime = crime[!duplicated(crime), ]
+
+```
+
+# Preliminary Infomations (not intended to be left in)
+
+## From the assignment:
++ 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
++ 2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
++ 3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
++ 4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
+
+## Variables:
+
+
+### 1. Target
++ crmrte  
+
+### 2. Label
++ county
+
+### 3. Geographic:
++ density (likely related to others, especially urban)  
++ west  
++ central  
++ urban   
+
+Correlation between logcrmrte and urban: 0.491 and with density 0.633.  
+Correlation between urban and density is 0.820  
+Correlation between logcrmrte and west is -0.414  west is also negatively correlated with density.  
+
+I think density is an important variable (more so than urban).  This would be logical as low income housing is often high-density.  
+
+
+```{r}
+# Geographic
+#foo2 = lm(crmrte ~ urban + central + west + density, data = crime)
+#foo2$coefficients
+#vcov(foo2)
+
+foo2log = lm(logcrmrte ~ urban + central + west + density, data = crime)
+foo2log$coefficients
+#vcov(foo2log)
+
+foo2rows = c("logcrmrte", "crmrte", "urban", "central", "west", "density")
+
+round(cor(crime[foo2rows]), 3)
+scatterplotMatrix(crime[,foo2rows], diagonal = "histogram")
+
+```
+
+
+### 4. Cost of doing crime:  
+#### Probabilities:
++ prbconv  
++ prbpris  
++ prbarr  
+
+Both prbarr and prbconv are negativly correlated to logcrmrte (-0.473 and -0.447 respectively).  prbconv is less reliable (unless we can explain the > 1 values.)  
+
+
+```{r}
+# Probabilities
+
+#foo1 = lm(crmrte ~ prbarr + prbconv + prbpris, data = crime)
+#foo1$coefficients
+#vcov(foo1)
+
+foo1log = lm(logcrmrte ~ prbarr + prbconv + prbpris, data = crime)
+foo1log$coefficients
+#vcov(foo1log)
+
+foo1rows = c("logcrmrte", "crmrte", "prbarr", "prbconv", "prbpris")
+
+round(cor(crime[foo1rows]), 3)
+scatterplotMatrix(crime[,foo1rows], diagonal = "histogram")
+
+```
+
+
+#### Sentence and police
++ avgsen  
++ polpc (likely related to prbconv)  
+
+polpc has a huge correlation, it makes sense, but it's still so high we should be very cautious.  
+
+```{r}
+# Sentence and police
+
+#foo3 = lm(crmrte ~ polpc + avgsen, data = crime)
+#foo3$coefficients
+#vcov(foo3)
+
+foo3log = lm(logcrmrte ~ polpc + avgsen, data = crime)
+foo3log$coefficients
+#vcov(foo3log)
+
+foo3rows = c("logcrmrte", "crmrte", "polpc", "avgsen")
+
+round(cor(crime[foo3rows]), 3)
+scatterplotMatrix(crime[,foo3rows], diagonal = "histogram")
+
+
+```
+
+### 5. Economics
++ taxpc
++ wcon
++ wtuc
++ wtrd
++ wfir 
++ wser 
++ wmfg 
++ wfed 
++ wsta 
++ wloc
+
+There's a lot to take in, however the negative relatinship to wser (wage service worker) is initially the most interesting. 
+
+```{r}
+# Economics
+#foo4 = lm(crmrte ~ taxpc + wcon + wtuc + wtrd + wfir + wser + wmfg + wfed + wsta + wloc, data = crime)
+#foo4$coefficients
+#vcov(foo4)
+
+foo4log = lm(logcrmrte ~ taxpc + wcon + wtuc + wtrd + wfir + wser + wmfg + wfed + wsta + wloc, data = crime)
+foo4log$coefficients
+#vcov(foo4log)
+
+foo4rows = c("logcrmrte", "crmrte", "taxpc", "wcon", "wtuc", "wtrd", "wfir", "wser", "wmfg", "wfed", "wsta", "wloc")
+
+round(cor(crime[foo4rows]), 2)
+#scatterplotMatrix(crime[,foo4rows], diagonal = "histogram")
+
+```
+
+
+
+### 6. Demographics
++ pctmin80 
++ pctymle
+
+pctmin80 is positively correlated and mix is negatively correlated.  This is counter intuitive to me.  Requires further
+
+```{r}
+# Demographics
+#foo5 = lm(crmrte ~ pctmin80 + mix + pctymle, data = crime)
+#foo5$coefficients
+#vcov(foo5)
+
+foo5log = lm(logcrmrte ~pctmin80 + mix + pctymle, data = crime)
+foo5log$coefficients
+#vcov(foo5log)
+
+foo5rows = c("logcrmrte", "crmrte", "pctmin80", "pctymle")
+
+round(cor(crime[foo5rows]), 3)
+scatterplotMatrix(crime[,foo5rows], diagonal = "histogram")
+
+```
+
+### 7. Crime types
+
+The higher the ratio of face-to-face crimes ends up with fewer crimes.  I suspect this is the result of a small police force that doesn't have as much time to go after less significant crimes, so I added that variable in too.  They're not strongly correlated.
+
+```{r}
+# Crime Types
+foo6log = lm(logcrmrte ~ mix + polpc, data = crime)
+foo6log$coefficients
+#vcov(foo5log)
+
+foo6rows = c("logcrmrte", "crmrte", "mix", "polpc")
+
+round(cor(crime[foo6rows]), 3)
+scatterplotMatrix(crime[,foo6rows], diagonal = "histogram")
+
+```
+
+
+
+```{r} 
+plot(crime$crmrte, ylab = 'crimes committed per person')
+```
+
+```{r}
+hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
+```
+
+```{r}
+model1 <- lm(crmrte ~ prbarr + polpc + density, data = crime)
+(model1$coefficients)
+
+```
+
+
+## Steps for evaluating variables
+Leverage (and Influence if required)  
+Goodness-of-Fit : AIC  
+Omitted variable bias  
+MSE  
+E[theta hat] = theta
+
+```{r}
+crime$urban + crime$west + crime$central
+crime$urban + crime$west
+crime$urban + crime$central
+crime$west + crime$central
+
+```
+
