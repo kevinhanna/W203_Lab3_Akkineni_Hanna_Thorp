@@ -38,6 +38,10 @@ crime$prbconv = as.numeric(as.character(crime$prbconv))
 # county 193 is duplidated, remove one
 crime = crime[!duplicated(crime), ]
 
+# Create a column exluding prbconv > 1 values
+crime$prbconv_fix = crime$prbconv
+crime[crime$prbconv_fix > 1, 'prbconv_fix'] = NA
+
 ```
 
 # Preliminary Infomations (not intended to be left in)
@@ -83,7 +87,7 @@ foo2log$coefficients
 foo2rows = c("logcrmrte", "crmrte", "urban", "central", "west", "density")
 
 round(cor(crime[foo2rows]), 3)
-scatterplotMatrix(crime[,foo2rows], diagonal = "histogram")
+scatterplotMatrix(crime[,foo2rows], diagonal = FALSE)
 
 ```
 
@@ -103,8 +107,7 @@ Both prbarr and prbconv are negativly correlated to logcrmrte (-0.473 and -0.447
 #foo1 = lm(crmrte ~ prbarr + prbconv + prbpris, data = crime)
 #foo1$coefficients
 #vcov(foo1)
-
-foo1log = lm(logcrmrte ~ prbarr + prbconv + prbpris, data = crime)
+foo1log = lm(logcrmrte ~ prbarr + prbconv +  prbpris, data = crime )
 foo1log$coefficients
 #vcov(foo1log)
 
@@ -112,6 +115,19 @@ foo1rows = c("logcrmrte", "crmrte", "prbarr", "prbconv", "prbpris")
 
 round(cor(crime[foo1rows]), 3)
 scatterplotMatrix(crime[,foo1rows], diagonal = "histogram")
+
+
+crime_tmp = crime[complete.cases(crime), ]
+foo7log = lm(logcrmrte ~ prbarr + prbconv_fix +  prbpris, data = crime_tmp )
+foo7log$coefficients
+#vcov(foo1log)
+
+foo7rows = c("logcrmrte", "crmrte", "prbarr", "prbconv_fix", "prbpris")
+
+round(cor(crime_tmp[foo7rows]), 3)
+scatterplotMatrix(crime_tmp[,foo7rows], diagonal = "histogram")
+
+remove(crime_tmp)
 
 ```
 
@@ -178,7 +194,7 @@ round(cor(crime[foo4rows]), 2)
 + pctmin80 
 + pctymle
 
-pctmin80 is positively correlated and mix is negatively correlated.  This is counter intuitive to me.  Requires further
+pctymle is strongly correlated. 
 
 ```{r}
 # Demographics
@@ -224,9 +240,17 @@ plot(crime$crmrte, ylab = 'crimes committed per person')
 hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
 ```
 
+parsimoneous model
 ```{r}
 model1 <- lm(logcrmrte ~ density + prbarr + polpc + wser + mix + pctmin80 + pctymle, data = crime)
 (model1$coefficients)
+summary(model1)
+AIC(model1)
+
+model2 <- lm(logcrmrte ~ density + prbarr + polpc + pctymle, data = crime)
+(model2$coefficients)
+summary(model2)
+AIC(model2)
 
 ```
 
@@ -243,6 +267,72 @@ crime$urban + crime$west + crime$central
 crime$urban + crime$west
 crime$urban + crime$central
 crime$west + crime$central
+
+```
+
+
+```{r}
+attach(crime)
+crime$logprbarr = log(crime$prbarr)
+crime$logprbconv = log(crime$prbconv)
+crime$logprbpris = log(crime$prbpris)
+crime$logavgsen = log(crime$avgsen)
+crime$logpolpc = log(crime$polpc)
+crime$logdensity = log(crime$density)
+crime$logtaxpc = log(crime$taxpc)
+crime$west = log(crime$west)
+crime$pctmin80 = log(crime$pctmin80)
+crime$wcon = log(crime$wcon)
+crime$wtuc = log(crime$wtuc)
+crime$wtrd = log(crime$wtrd)
+crime$wfir = log(crime$wfir)
+crime$wfir = log(crime$wfir)
+crime$wser = log(crime$wser)
+crime$wmfg = log(crime$wmfg)
+crime$wfed = log(crime$wfed)
+crime$wsta = log(crime$wsta)
+crime$wloc = log(crime$wloc)
+crime$mix = log(crime$mix)
+crime$pctymle = log(crime$pctymle)
+
+```
+
+```{r}
+cn = colnames(crime)
+cnlen = length(cn)-1
+
+
+results = data.frame()
+
+for (i in 4:(cnlen-2)) {
+  for (j in (i+1):(cnlen-3)) {
+    for(k in (j+1):(cnlen - 4)) {
+      for (l in (k+1):(cnlen)) {
+#        for (m in (l+1):cnlen) {
+          #print(i)
+          #print(j)
+          #print(k)
+          print(l)
+          mod = lm(
+                  as.formula(
+                    paste(
+                      "logcrmrte ~", 
+                      paste(cn[c(i,j,k,l)], collapse = " + ")
+                      
+                      )
+                    )
+                  , data = crime)  
+          print(mod$terms[[3]])
+          #print(AIC(mod))
+          results = rbind(results, data.frame(terms=toString(mod$terms[[3]]), aic=AIC(mod)))
+#        }
+      }
+    }
+  }
+}
+
+sortedResults = results[order(-results$aic), ]
+head(sortedResults, 20)
 
 ```
 
