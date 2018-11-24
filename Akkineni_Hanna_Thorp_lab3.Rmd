@@ -29,8 +29,8 @@ determinants of crime and to help with policy suggestions that are applicable to
 library(knitr)
 library(kableExtra)
 
-codebook <- read.csv('~/Coding/W203_Lab3_Akkineni_Hanna_Thorp/codebook.csv')
-crime <- read.csv('~/Coding/W203_Lab3_Akkineni_Hanna_Thorp/crime_v2.csv')
+codebook <- read.csv('codebook.csv')
+crime <- read.csv('crime_v2.csv')
 
 # Convert columns to factors and logical.
 crime$county <- as.factor(crime$county)
@@ -125,60 +125,62 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 (Bring Naga's analysis over here after)
 
-<<<<<<< HEAD
 ```{r}
-hist(crime$crmrte, xlab = 'crimes committed per person', main = 'Histogram of crimes committed per person')
-shapiro.test(crime$crmrte)
-hist(log(crime$crmrte), xlab = 'log of crimes committed per person', main = 'Histogram of Log of crimes committed per person')
-shapiro.test(log(crime$crmrte))
+quick_uni_analysis = function(variable, description) {
+  hist(variable, xlab = description, 
+     main = paste('Shapiro p-value:',
+                  round(as.numeric(shapiro.test(variable)[2]), 8)
+                  ))
+  hist(log(crime$crmrte), xlab = paste('Log of ', description), 
+     main = paste('Shapiro p-value:', 
+                  round(as.numeric(shapiro.test(log(variable))[2]), 8)
+                  ))
+}
 ```
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$crmrte, 'crimes committed per person')
+```
+
+
 Log is preferable - both for interpretation and for better adhering to modeling assumptions
 
-```{r}
-hist(crime$prbarr, xlab = 'probability of arrest', main = 'Histogram of probability of arrest')
-shapiro.test(crime$prbarr)
-hist(log(crime$prbarr), xlab = 'log of probability of arrest', main = 'Histogram of Log of probability of arrest')
-shapiro.test(log(crime$prbarr))
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$prbarr, 'Probability of Arrest')
 ```
+
 Log is preferable - both for interpretation and for better adhering to modeling assumptions
 
-```{r}
-hist(crime$prbconv, xlab = 'probability of conviction', main = 'Histogram of probability of conviction')
-shapiro.test(crime$prbconv)
-hist(log(crime$prbconv), xlab = 'log of probability of conviction', main = 'Histogram of Log of probability of conviction')
-shapiro.test(log(crime$prbconv))
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$prbconv, 'Probability of Conviction')
 ```
+
 Log is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
 
-```{r}
-hist(crime$prbpris, xlab = 'probability of prison', main = 'Histogram of probability of prison')
-shapiro.test(crime$prbpris)
-hist(log(crime$prbpris), xlab = 'log of probability of prison', main = 'Histogram of Log of probability of prison')
-shapiro.test(log(crime$prbpris))
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$prbpris, 'Probability of Prison')
 ```
+
 From an interpretation standpoint, the logged version is preferable, although from an modeling assumption standpoint, the unlogged version is preferable. 
 
-```{r}
-hist(crime$avgsen, xlab = 'average sentence', main = 'Histogram of average sentence')
-shapiro.test(crime$avgsen)
-hist(log(crime$avgsen), xlab = 'log of average sentence', main = 'Histogram of Log of average sentence')
-shapiro.test(log(crime$avgsen))
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$avgsen, 'Average Sentence')
 ```
+
 The logged version is preferable from both an interpretation and modeling assumption standpoint.
 
-```{r}
-hist(crime$polpc, xlab = 'police as percent of population', main = 'Histogram of police as percent of population')
-shapiro.test(crime$polpc)
-hist(log(crime$polpc), xlab = 'log of police as percent of population', main = 'Histogram of Log of police as percent of population')
-shapiro.test(log(crime$polpc))
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$polpc, 'Police as Percent of Pop')
 ```
+
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
-```{r}
-hist(crime$pctymle, xlab = 'percent of population that are yound males', main = 'Histogram of percent of population that are yound males')
-shapiro.test(crime$pctymle)
-hist(log(crime$pctymle), xlab = 'log of percent of population that are yound males', main = 'Histogram of Log of percent of population that are yound males')
-shapiro.test(log(crime$pctymle))
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$avgsen, 'Per. of Pop. That Are Young Males')
 ```
 Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
@@ -289,8 +291,6 @@ crime$west + crime$central
 
 ```
 
-=======
->>>>>>> 798db4e62e6d541b8f06fdccace99016998e1114
 
 \newpage
 
