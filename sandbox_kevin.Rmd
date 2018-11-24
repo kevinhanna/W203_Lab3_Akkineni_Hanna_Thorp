@@ -27,6 +27,9 @@ crime$urban <- as.logical(crime$urban)
 # Create a log of the dependent variable
 crime$logcrmrte <- log(crime$crmrte)
 
+#reorder to place logcrmte next to crmrte
+crime <- crime[,c(1,2,3,26,4:25)]
+
 # Delete the 6 empty observations at the end, including the row with the apostrophe.
 # We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
 crime = crime[complete.cases(crime), ]
@@ -270,69 +273,4 @@ crime$west + crime$central
 
 ```
 
-
-```{r}
-attach(crime)
-crime$logprbarr = log(crime$prbarr)
-crime$logprbconv = log(crime$prbconv)
-crime$logprbpris = log(crime$prbpris)
-crime$logavgsen = log(crime$avgsen)
-crime$logpolpc = log(crime$polpc)
-crime$logdensity = log(crime$density)
-crime$logtaxpc = log(crime$taxpc)
-crime$west = log(crime$west)
-crime$pctmin80 = log(crime$pctmin80)
-crime$wcon = log(crime$wcon)
-crime$wtuc = log(crime$wtuc)
-crime$wtrd = log(crime$wtrd)
-crime$wfir = log(crime$wfir)
-crime$wfir = log(crime$wfir)
-crime$wser = log(crime$wser)
-crime$wmfg = log(crime$wmfg)
-crime$wfed = log(crime$wfed)
-crime$wsta = log(crime$wsta)
-crime$wloc = log(crime$wloc)
-crime$mix = log(crime$mix)
-crime$pctymle = log(crime$pctymle)
-
-```
-
-```{r}
-cn = colnames(crime)
-cnlen = length(cn)-1
-
-
-results = data.frame()
-
-for (i in 4:(cnlen-2)) {
-  for (j in (i+1):(cnlen-3)) {
-    for(k in (j+1):(cnlen - 4)) {
-      for (l in (k+1):(cnlen)) {
-#        for (m in (l+1):cnlen) {
-          #print(i)
-          #print(j)
-          #print(k)
-          print(l)
-          mod = lm(
-                  as.formula(
-                    paste(
-                      "logcrmrte ~", 
-                      paste(cn[c(i,j,k,l)], collapse = " + ")
-                      
-                      )
-                    )
-                  , data = crime)  
-          print(mod$terms[[3]])
-          #print(AIC(mod))
-          results = rbind(results, data.frame(terms=toString(mod$terms[[3]]), aic=AIC(mod)))
-#        }
-      }
-    }
-  }
-}
-
-sortedResults = results[order(-results$aic), ]
-head(sortedResults, 20)
-
-```
 

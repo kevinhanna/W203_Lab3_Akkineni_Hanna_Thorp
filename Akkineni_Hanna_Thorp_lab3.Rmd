@@ -123,8 +123,6 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 ## Univariate Analysis
 
-(Bring Naga's analysis over here after)
-
 ```{r}
 quick_uni_analysis = function(variable, description) {
   hist(variable, xlab = tools::toTitleCase(description), 
@@ -188,13 +186,34 @@ quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males')
 
 Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$density, 'people per sq. mile')
+plot(log(crime$density))
+boxplot(log(crime$density))
+plot(crime$logcrmrte)
+boxplot(crime$logcrmrte)
+```
+
 \newpage
 
-# Key Relationship Analysis
+# Model Analysis
 
+## General Crime Prediction Model
+```{r}
+general_model = lm(logcrmrte ~ prbarr + prbconv + polpc + log(pctmin80) + log(density), data = crime)
+general_aic = AIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+print(general_aic)
+print(general_adjrsquared)
 
+par(mfrow = c(2,2))
+plot(general_model)
+#plot(general_model, which = 1)
+#plot(general_model, which = 5)
 
-\newpage
+```
+
 
 # Preliminary Infomation (not intended to be left in)
 
