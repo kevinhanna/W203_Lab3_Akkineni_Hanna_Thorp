@@ -127,19 +127,22 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 ```{r}
 quick_uni_analysis = function(variable, description) {
-  hist(variable, xlab = description, 
+  hist(variable, xlab = tools::toTitleCase(description), 
      main = paste('Shapiro p-value:',
-                  round(as.numeric(shapiro.test(variable)[2]), 8)
-                  ))
-  hist(log(crime$crmrte), xlab = paste('Log of ', description), 
-     main = paste('Shapiro p-value:', 
-                  round(as.numeric(shapiro.test(log(variable))[2]), 8)
-                  ))
+                  round(as.numeric(shapiro.test(variable)[2]), 6)
+                  )
+     )
+  hist(log(crime$crmrte), 
+       xlab = tools::toTitleCase(paste('Log of', description)), 
+       main = paste('Shapiro p-value:',
+                    round(as.numeric(shapiro.test(log(variable))[2]), 6)
+                    )
+       )
 }
 ```
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$crmrte, 'crimes committed per person')
+quick_uni_analysis(crime$crmrte, 'crimes committed per per.')
 ```
 
 
@@ -173,20 +176,27 @@ quick_uni_analysis(crime$avgsen, 'Average Sentence')
 The logged version is preferable from both an interpretation and modeling assumption standpoint.
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$polpc, 'Police as Percent of Pop')
+quick_uni_analysis(crime$polpc, 'Police as Per. of Pop.')
 ```
 
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$avgsen, 'Per. of Pop. That Are Young Males')
+quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males')
 ```
+
 Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
 \newpage
 
-# Preliminary Infomations (not intended to be left in)
+# Key Relationship Analysis
+
+
+
+\newpage
+
+# Preliminary Infomation (not intended to be left in)
 
 ## From the assignment:
 + 1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
