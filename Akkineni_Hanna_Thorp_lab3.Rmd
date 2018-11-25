@@ -238,27 +238,14 @@ quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
 
 # Model Analysis
 
+Using variables and transforms identified in the univariate analysis above we created the following models.
+
 ## General Crime Prediction Model
 ```{r}
+#general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
+#general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
+
 general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
-general_aic = AIC(general_model)
-general_bic = BIC(general_model)
-general_rsquared = summary(general_model)[8]
-general_adjrsquared = summary(general_model)[9]
-
-print(general_aic)
-print(general_bic)
-print(general_rsquared)
-print(general_adjrsquared)
-
-par(mfrow = c(2,2))
-plot(general_model)
-
-```
-
-## General Crime Prediction Model nolog crime rate
-```{r}
-general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
 general_aic = AIC(general_model)
 general_bic = BIC(general_model)
 general_rsquared = summary(general_model)[8]
@@ -276,28 +263,14 @@ plot(general_model)
 
 polpc and pctmin80 are control 
 
-<!--
-## General Crime Prediction Model nolog anywhere
-```{r}
-general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
-general_aic = AIC(general_model)
-general_bic = BIC(general_model)
-general_rsquared = summary(general_model)[8]
-general_adjrsquared = summary(general_model)[9]
-
-print(general_aic)
-print(general_bic)
-print(general_rsquared)
-print(general_adjrsquared)
-
-par(mfrow = c(2,2))
-plot(general_model)
-
-```
--->
 
 ## Simple Crime Prediction Model
 ```{r}
+
+#general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
+#general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+#general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
+
 general_model = lm(crmrte ~ log(prbarr) + log(prbconv), data = crime)
 general_aic = AIC(general_model)
 general_bic = BIC(general_model)
@@ -315,11 +288,12 @@ plot(general_model)
 
 ```
 
-
-<!--
-## Simple Crime Prediction Model
+## Kitchen Sink Crime Prediction Model
 ```{r}
-general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_model = lm(logcrmrte ~ prbarr + prbconv + wtrd + wfir + wmfg + wfed + wloc +
+                     mix + pctymle +
+                     log(polpc) + log(pctmin80)
+                   , data = crime)
 general_aic = AIC(general_model)
 general_bic = BIC(general_model)
 general_rsquared = summary(general_model)[8]
@@ -334,45 +308,6 @@ par(mfrow = c(2,2))
 plot(general_model)
 
 ```
-
-## Simple Crime Prediction Model nonlog crime rate
-```{r}
-general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
-general_aic = AIC(general_model)
-general_bic = BIC(general_model)
-general_rsquared = summary(general_model)[8]
-general_adjrsquared = summary(general_model)[9]
-
-print(general_aic)
-print(general_bic)
-print(general_rsquared)
-print(general_adjrsquared)
-
-
-par(mfrow = c(2,2))
-plot(general_model)
-
-```
-
-## Simple Crime Prediction Model nonlog anywhere
-```{r}
-general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
-general_aic = AIC(general_model)
-general_bic = BIC(general_model)
-general_rsquared = summary(general_model)[8]
-general_adjrsquared = summary(general_model)[9]
-
-print(general_aic)
-print(general_bic)
-print(general_rsquared)
-print(general_adjrsquared)
-
-
-par(mfrow = c(2,2))
-plot(general_model)
-
-```
--->
 
 ## Effects of Number of Police on Crime Mix
 ```{r}
