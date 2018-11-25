@@ -41,6 +41,11 @@ crime$urban <- as.logical(crime$urban)
 
 # Create a log of the dependent variable
 crime$logcrmrte <- log(crime$crmrte)
+crime$east <- !(crime$west | crime$central)
+
+# Reorder to place logcrmte next to crmrte and east next to central
+# It's unsafe to keep this in, but handy for viewing data
+#crime <- crime[,c(1,2,3,26,4:13,27,14:25)]
 
 ```
 
@@ -119,8 +124,6 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 
 
-
-
 ## Univariate Analysis
 
 ```{r}
@@ -139,46 +142,69 @@ quick_uni_analysis = function(variable, description) {
 }
 ```
 
+### Key Interests
+
+#### Crimes Committed Per Person
+Campaign Significance: Crime rate is a politicized and effects economy   
+
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$crmrte, 'crimes committed per per.')
 ```
 
-
 Log is preferable - both for interpretation and for better adhering to modeling assumptions
 
+#### Offence Mix
+This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence, hense the more severe crimes.  Focusing resources which reduces this ratio along with the overall crime rate would be more beneficial.   
 
+Campaign Significance: Violent crimes create fear and fear is a strong motivator for voters.
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$prbarr, 'Probability of Arrest')
+```
+
+### Explanatory
+
+#### Probability of Arrest
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$prbarr, 'Probability of Arrest')
 ```
 
 Log is preferable - both for interpretation and for better adhering to modeling assumptions
 
+#### Probability of Conviction
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$prbconv, 'Probability of Conviction')
 ```
 
 Log is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
 
-
+#### Probability of Prison
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$prbpris, 'Probability of Prison')
 ```
 
 From an interpretation standpoint, the logged version is preferable, although from an modeling assumption standpoint, the unlogged version is preferable. 
 
-
+#### Average Sentence
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$avgsen, 'Average Sentence')
 ```
 
 The logged version is preferable from both an interpretation and modeling assumption standpoint.
 
+#### Police as a Percentage of Population
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$polpc, 'Police as Per. of Pop.')
+
 ```
 
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
+The inclusion of this variable in a model needs to take in to consideration that an increase in crime can cause an increase in the number of police blah blah blah <!-- TODO -->.  Without timeseries data including changes to Police as a Percentage of Population we cannon determine the true effects.  However, many studies show that increasing the size of a police force does reduce crime.
+<!-- 
+http://www.princeton.edu/~smello/papers/cops.pdf 
+https://www.jstor.org/stable/10.1086/666614 (VPN Needed Kevin has a copy)
+-->
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males')
@@ -194,26 +220,189 @@ plot(crime$logcrmrte)
 boxplot(crime$logcrmrte)
 ```
 
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
+```
+
+
 \newpage
 
 # Model Analysis
 
 ## General Crime Prediction Model
 ```{r}
-general_model = lm(logcrmrte ~ prbarr + prbconv + polpc + log(pctmin80) + log(density), data = crime)
+general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
 general_aic = AIC(general_model)
+general_bic = BIC(general_model)
 general_rsquared = summary(general_model)[8]
 general_adjrsquared = summary(general_model)[9]
+
 print(general_aic)
+print(general_bic)
+print(general_rsquared)
 print(general_adjrsquared)
 
 par(mfrow = c(2,2))
 plot(general_model)
-#plot(general_model, which = 1)
-#plot(general_model, which = 5)
 
 ```
 
+## General Crime Prediction Model nolog crime rate
+```{r}
+general_model = lm(crmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+## General Crime Prediction Model nolog anywhere
+```{r}
+general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+
+## Simple Crime Prediction Model
+```{r}
+general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+## Simple Crime Prediction Model nonlog crime rate
+```{r}
+general_model = lm(crmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+## Simple Crime Prediction Model nonlog anywhere
+```{r}
+general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+## Effects of Number of Police on Crime Mix
+```{r}
+general_model = lm(mix ~ polpc + pctmin80 + log(100*density) + pctymle, data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+summary(general_model)
+
+```
+
+#### Police in High Density
+```{r}
+general_model = lm(crmrte ~ polpc, data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+summary(general_model)
+
+```
+
+```{r}
+general_model = lm(crmrte ~ polpc, data = crime[crime$density >= quantile(crime$density, .90), ])
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
+
+
+par(mfrow = c(2,2))
+plot(general_model)
+
+summary(general_model)
+
+```
+
+More police in higher density correlatest to higher crime rate.  Probably not worth keeping, but interesting.
 
 # Preliminary Infomation (not intended to be left in)
 
@@ -231,7 +420,7 @@ plot(general_model)
 2. Label
 + county
 
-3. Geographic: (my own word, just things that can segregate the data).  Counties can belong to 0 or more from west, central and urban.
+3. Geographic: 
 + density (likely related to others, especially urban)  
 + west  
 + central  
@@ -239,14 +428,13 @@ plot(general_model)
 
 4. Certainty of Punishment:  
 + prbarr 
-+ prbconv  
++ prbconv
++ polpc  
 
 5. Severity of Punishment:
 + prbpris  
 + avgsen  
 
-Other 
-+ polpc (likely related to certainty of punishment)  
 
 We haven't really addressed what kinds of crimes are being talked about. Should we assume that it is violent crimes and drug crimes? (i.e. not white collar or other non-violent) If we also assume that some crimes are committed by rational actors weighing gains versus losses, we would expect crimes like theft and drug dealing to be negatively correlated with wealth (i.e. higher opportunity cost for wealthy people to engage in those sorts of crimes - and by extension linked crimes like manslaughter (I'm thinking an attempted theft or drug deal gone wrong). 
 
@@ -262,6 +450,9 @@ Another idea is that crimes are more likely as inequality is high between neighb
 
 And another idea is that organized crime tends to be more persistent than isolated instances of crime. So, to the extent possible, it would be useful to have a measure of gang/mob/etc membership as a percent of the population.
 
+Recidivism would be interesting, how much is caused by repeat offenders, how sentencing affects overall crime.
+
+
 ```{r}
 mod1 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen, data=crime)
 summary(mod1)
@@ -276,6 +467,8 @@ summary(mod2_log)
 ```
 I disagree with the inclusion of police percentage in this regression. While all else equal, we may expect more police to result in a deterrent, we can only assess this against an unobservable counterfactual - how the same location would have been impacted had more police or less police been assigned there. This would be possible to address experimentally, but not observationally. The problem is that places with increasing crime rates are subsequently likely to increase police presence, while those with decreasing crime rates are likely to decrease police presence (for budgetary reasons). 
 
+* I found studies showing increasing police decreases crime, including studies done with accidental experiements.  I cited a couple above in the univariate (only visible in code because of HTML comments) 
+
 ```{r}
 mod3 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen + density, data=crime)
 summary(mod3)
@@ -283,6 +476,8 @@ mod3_log <- lm(log(crmrte) ~ log(prbarr) + log(prbconv) + log(prbpris) + log(avg
 summary(mod3_log)
 ```
 I also disagree with this simplistic inclusion of density (if our goal is causation, not prediction). All else equal - density means more eyes looking around - which should mean less propensity to commit crime. There are likely other variables which better explain what many lazily associate with density. For example, thresholds of inequality, where extreme wealth exists right next to extreme poverty are more common in more dense locations. Additionally, more dense locations sometimes have less average social capital (perhaps again because of close proximity class differences) than less dense places. These are good instances of omitted variable bias. Since our goal is causation rather than prediction, we should be cautious in including density as an explanatory variable. 
+
+* Interesting, the last line in in the abstract here: https://www.ncjrs.gov/App/Publications/abstract.aspx?ID=99314 agrees.  Correlation, not likely causation.  
 
 ```{r}
 mod4 <- lm(crmrte ~ prbarr + prbconv + prbpris + avgsen + pctymle, data=crime)
@@ -305,12 +500,6 @@ Interesting things to note after examining these regression approaches:
 
 
 
-## Steps for evaluating variables
-Leverage (and Influence if required)  
-Goodness-of-Fit : AIC  
-Omitted variable bias  
-MSE  
-E[theta hat] = theta
 
 ```{r}
 crime$urban + crime$west + crime$central
@@ -330,6 +519,18 @@ crime$west + crime$central
 From the assignment "Since you are restricted
 to ordinary least squares regression, omitted variables will be a major obstacle to your estimates. You should
 aim for causal estimates, while clearly explaining how you think omitted variables may affect your conclusions."
+
+## Crime rate
+Can use crime rate as leverage against incumbent if it's high, or to defend as the incumbent if it's low.
+
+### Something about unfeasibility and unreliability of kitchen-sink model
+While adding police, increasing sentences, pay everybody more money, 
+
+### How to reduce overall crime
+From selected models
+
+### How to reduce mix ratio (violent crimes)
+More police reduces mix ratio 
 
 \newpage
 # Apendix A: Codebook
