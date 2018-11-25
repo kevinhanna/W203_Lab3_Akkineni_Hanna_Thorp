@@ -43,6 +43,10 @@ crime$urban <- as.logical(crime$urban)
 crime$logcrmrte <- log(crime$crmrte)
 crime$east <- !(crime$west | crime$central)
 
+# Possible transformation for prbconv
+#crime$adjprbconv = crime$prbconv/max(crime$prbconv)
+
+
 # Reorder to place logcrmte next to crmrte and east next to central
 # It's unsafe to keep this in, but handy for viewing data
 #crime <- crime[,c(1,2,3,26,4:13,27,14:25)]
@@ -92,7 +96,7 @@ crime = crime[!duplicated(crime), ]
 ```
 
 
-#### Concerns about data
+### Concerns about data
 
 There are three probability columns in the given dataset. Check if any of the columns has invalid values - i.e., any of the columns have less than zero or greater than 1 values.
 
@@ -115,10 +119,10 @@ nrow(crime[(crime$prbconv<0 | crime$prbconv>1), c('county', 'prbconv')])
 
 ```
 
-##### prbarr (Probability of Arrest)
+#### prbarr (Probability of Arrest)
 We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  It is the only observation with an invalid value, we will treat this variable as valid, however do so with caution.  
 
-##### prbconv (Probability of Conviction)
+#### prbconv (Probability of Conviction)
 We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  We have little confidence in the veracity of this variable, and will not be performing further analysis.
 <!-- TODO: Make sure the above is still true before handing in -->
 
@@ -141,6 +145,11 @@ quick_uni_analysis = function(variable, description) {
        )
 }
 ```
+
+### Log Transforms
+(just a screen cap for now)
+
+![](logtransforms.png)
 
 ### Key Interests
 
@@ -249,7 +258,7 @@ plot(general_model)
 
 ## General Crime Prediction Model nolog crime rate
 ```{r}
-general_model = lm(crmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
 general_aic = AIC(general_model)
 general_bic = BIC(general_model)
 general_rsquared = summary(general_model)[8]
@@ -265,6 +274,9 @@ plot(general_model)
 
 ```
 
+polpc and pctmin80 are control 
+
+<!--
 ## General Crime Prediction Model nolog anywhere
 ```{r}
 general_model = lm(crmrte ~ prbarr + prbconv + polpc + pctmin80, data = crime)
@@ -282,8 +294,29 @@ par(mfrow = c(2,2))
 plot(general_model)
 
 ```
+-->
+
+## Simple Crime Prediction Model
+```{r}
+general_model = lm(crmrte ~ log(prbarr) + log(prbconv), data = crime)
+general_aic = AIC(general_model)
+general_bic = BIC(general_model)
+general_rsquared = summary(general_model)[8]
+general_adjrsquared = summary(general_model)[9]
+
+print(general_aic)
+print(general_bic)
+print(general_rsquared)
+print(general_adjrsquared)
 
 
+par(mfrow = c(2,2))
+plot(general_model)
+
+```
+
+
+<!--
 ## Simple Crime Prediction Model
 ```{r}
 general_model = lm(logcrmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
@@ -304,7 +337,7 @@ plot(general_model)
 
 ## Simple Crime Prediction Model nonlog crime rate
 ```{r}
-general_model = lm(crmrte ~ prbarr + prbconv + log(polpc) + log(pctmin80), data = crime)
+general_model = lm(crmrte ~ log(prbarr) + log(prbconv) + polpc + log(pctmin80), data = crime)
 general_aic = AIC(general_model)
 general_bic = BIC(general_model)
 general_rsquared = summary(general_model)[8]
@@ -339,6 +372,7 @@ par(mfrow = c(2,2))
 plot(general_model)
 
 ```
+-->
 
 ## Effects of Number of Police on Crime Mix
 ```{r}
