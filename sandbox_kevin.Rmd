@@ -42,8 +42,8 @@ crime$prbconv = as.numeric(as.character(crime$prbconv))
 crime = crime[!duplicated(crime), ]
 
 # Create a column exluding prbconv > 1 values
-crime$prbconv_fix = crime$prbconv
-crime[crime$prbconv_fix > 1, 'prbconv_fix'] = NA
+#crime$prbconv_fix = crime$prbconv
+#crime[crime$prbconv_fix > 1, 'prbconv_fix'] = NA
 
 ```
 
@@ -120,17 +120,17 @@ round(cor(crime[foo1rows]), 3)
 scatterplotMatrix(crime[,foo1rows], diagonal = "histogram")
 
 
-crime_tmp = crime[complete.cases(crime), ]
-foo7log = lm(logcrmrte ~ prbarr + prbconv_fix +  prbpris, data = crime_tmp )
-foo7log$coefficients
+#crime_tmp = crime[complete.cases(crime), ]
+#foo7log = lm(logcrmrte ~ prbarr + prbconv_fix +  prbpris, data = crime_tmp )
+#foo7log$coefficients
 #vcov(foo1log)
 
-foo7rows = c("logcrmrte", "crmrte", "prbarr", "prbconv_fix", "prbpris")
+#foo7rows = c("logcrmrte", "crmrte", "prbarr", "prbconv_fix", "prbpris")
 
-round(cor(crime_tmp[foo7rows]), 3)
-scatterplotMatrix(crime_tmp[,foo7rows], diagonal = "histogram")
+#round(cor(crime_tmp[foo7rows]), 3)
+#scatterplotMatrix(crime_tmp[,foo7rows], diagonal = "histogram")
 
-remove(crime_tmp)
+#remove(crime_tmp)
 
 ```
 
@@ -155,7 +155,7 @@ foo3log$coefficients
 foo3rows = c("logcrmrte", "crmrte", "polpc", "avgsen")
 
 round(cor(crime[foo3rows]), 3)
-scatterplotMatrix(crime[,foo3rows], diagonal = "histogram")
+scatterplotMatrix(crime[,foo3rows], diagonal=list(method ="histogram", breaks="FD"))
 
 
 ```
@@ -273,4 +273,14 @@ crime$west + crime$central
 
 ```
 
+```{r}
+cn = colnames(crime)
+cnlen = length(cn)-1
+
+for (i in 1:cnlen) {
+  mod1nl = ln(as.formula(paste("crime$crmrte ~", cn[i], "data=crime")))
+  
+
+  }
+```
 
