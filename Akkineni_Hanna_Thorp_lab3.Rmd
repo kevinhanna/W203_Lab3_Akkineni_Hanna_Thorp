@@ -698,7 +698,8 @@ Our ideal model of the causes of the crime rate would be something like:
 
 $$
 \begin{aligned}
-crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3wealth\_inequality\ + \\ &\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}gender\_imbalance + ... + error
+crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3wealth\_inequality\ + \\ &\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}percent\_of\_population\_previously\_committed\_crime + 
+\beta_{11}percent\_of\_population\_previously_imprisoned + ... + error
 \end{aligned}
 $$
 
