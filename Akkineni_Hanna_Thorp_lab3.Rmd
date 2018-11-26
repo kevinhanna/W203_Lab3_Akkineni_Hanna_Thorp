@@ -5,7 +5,7 @@ date: "November 27, 2018"
 output:
     pdf_document:
     toc: true
-    toc_depth: 2
+    toc_depth: 1
     fig_height: 3
     df_print: kable
     highlight: tango
@@ -16,12 +16,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 \tableofcontents 
+
 <!--
 \listoffigures
 \listoftables
 -->
-\newpage
-#Introduction (Stage 1: Draft Report)
+
+# Introduction (Stage 1: Draft Report)
 
 Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
 
@@ -62,7 +63,7 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 
 # Exploratory Data Analysis
 
-##  Data Summary
+#Data Summary
 
 We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
@@ -89,7 +90,7 @@ crime = crime[!duplicated(crime), ]
 ```
 
 
-### Concerns about data
+###Concerns about data
 
 #### prbarr (Probability of Arrest)
 We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
@@ -114,7 +115,7 @@ The dataset contained 90 counties, and there are 100 couties in North Carolina. 
 
 These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
 
-## Univariate Analysis
+##Univariate Analysis
 
 ```{r}
 quick_uni_analysis = function(variable, description, roundto = 8) {
@@ -146,7 +147,7 @@ hist(log(variable),
   #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
   #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
-### Key Variable
+###Key Variable
 
 #### Crimes Committed Per Person
 
@@ -601,7 +602,7 @@ AIC(model4)
 ```
 The AIC for this model is 31.94569
 
-\newpage
+
 ```{r, results='asis'}
 stargazer(model1, model2,model3, model4, type = "latex",
          report = "vc", # Don't report errors, since we haven't covered them
@@ -639,7 +640,7 @@ Using All variables, we got a better AIC compared to Model 1 and very close to M
 
 ####Best-Fit Model
 Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.9529. 
-\newpage
+
 # Omitted Variables
 
 In order to make valid policy recommendations, we need confidence that our estimated coefficients for policy-relevant variables are unbiased, statistically significant, and practically significant. Statistical software makes it quite easy to determine if there is a relationship between a given variable and the dependent variable that is statistically significantly different from zero - an area of analysis that we will expand upon in follow-ups to this piece. Practical significance of our estimates requires just one extra step to interpret the meaning of the estimate for each variable under consideration. Accounting for elements which could bias our estimates is more difficult and, to some degree, not a solvable problem.  
@@ -667,7 +668,6 @@ Our ability to interpret the variable polpc in our dataset is also compromised b
 
 Finally, our dataset contains several variables with nominal wages for certain industries. Including these in our model is likely to be somewhat misleading, producing biased estimators because these measures are not adjusted for cost of living. Said in other terms, each of the nominal wage indicators is likely positively correlated with our desired explanatory variable - real wages. Conceptually, we expect the relationship between real wages and crime rate to be negative, while the relationship between real wages and nominal wages is positive. As such our model's estimator for wages is likely to understate the impact of wages on crime rate. As such, these nominal wage variables are an imperfect proxy for the desired variable real wages
 
-\newpage
 
 # Conclusion
 
