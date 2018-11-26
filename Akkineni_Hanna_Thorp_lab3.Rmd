@@ -20,8 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 \listoffigures
 \listoftables
 -->
-
-# Introduction (Stage 1: Draft Report)
+\newpage
+#Introduction (Stage 1: Draft Report)
 
 Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
 
@@ -32,7 +32,7 @@ suppressMessages(library(car))
 suppressMessages(library(stargazer))
 suppressMessages(library(lmtest))
 
-crime <- read.csv('crime_v2.csv')
+crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
 # Convert columns to factors and logical.
 crime$county <- as.factor(crime$county)
@@ -151,9 +151,9 @@ hist(log(variable),
 #### Crimes Committed Per Person
 
 **Campaign Significance**: The political campaign which hired us is interested in policy prescriptions derived from causal analysis of crime rates.  This is the key variable our models will attempt to explain.
-```{r, fig.height=4}
+```{r, fig.height=3, fig.show='hold'}
 par(mfrow=c(1,2))
-quick_uni_analysis(crime$crmrte, 'crimes committed per capita')
+quick_uni_analysis(crime$crmrte, 'crimes committed per person')
 ```
 Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject. The transformed variable is preferable for modelling. 
 
@@ -237,7 +237,7 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 
 
 
-### Model Analysis
+# Model Analysis
 Transforming the variables and storing them in the data frame
 
 ```{r}
@@ -254,7 +254,7 @@ crime$log_mix <- log(crime$mix)
 crime$log_pctymle <- log(crime$pctymle)
 ```
 
-#### Model1 - Minimum Specification
+## Model1 - Minimum Specification
 
 Crime-Determinants: we anticipate that the crime rate depends on average sentencing as higher crime rate tends to have higher sentencing. And Increased avgsen suggests there are severe crimes happening in a given county.
 The two probability variables prbarr and prbconv will have strong correlations with prbpris and so we are including them as well in our model so that we can measure how much these variables influence crime rate.
@@ -435,7 +435,7 @@ There are some influential values [24,51,79] however cook's distance is within t
 ```{r}
 AIC(model2)
 ```
-The AIC for this model is 30.50572
+The AIC for this model is 30.5825
 
 ## Model3 - Optimal-2 Specification [Best-Fit model]
 
@@ -518,12 +518,11 @@ If we remove the outliers, we see a better and improved R-Square value
 ```{r}
 AIC(model3)
 ```
-The AIC for this model is 26.92602
+The AIC for this model is 26.9529
 
 ## Model4 - Using all variables Specification
 
 The team wanted to check the robustness of all variables in the model except county name, year
-
 $$
 \begin{aligned}
 log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\ 
@@ -533,7 +532,6 @@ log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(p
   &\beta_18log(wsta)+ \beta_19log(wloc) + \beta_20log(mix)+\beta_21log(density) + \beta_22log(pctymle) + u \\
 \end{aligned}
 $$
-
 
 ```{r}
 model4 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) + 
@@ -545,7 +543,7 @@ model4 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +
 #### Checking if our Assumptions are valid in the model- 
 ####Assumption - Linear model 
 The specified model has the dependent variable linear with explanatory variables 
-```{r}
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=1)
 ```
 
@@ -590,7 +588,6 @@ hist(model4$residuals,main="Model4 Residuals")
 
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
 So, it is a VALID assumption.
-
 ####Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=4)
@@ -598,15 +595,13 @@ plot(model4, which=5)
 
 ```
 There are some influential values [25,79,84] however cook's distance is within the bounds
-
 ####Calculating AIC
 ```{r}
 AIC(model4)
 ```
-The AIC for this model is 30.78825
+The AIC for this model is 31.94569
 
 \newpage
-#Model Analysis
 ```{r, results='asis'}
 stargazer(model1, model2,model3, model4, type = "latex",
          report = "vc", # Don't report errors, since we haven't covered them
@@ -617,33 +612,33 @@ stargazer(model1, model2,model3, model4, type = "latex",
          dep.var.caption  = "Measuring Crime Rate",
          dep.var.labels   = "Crime Rate")
 ```
-#Model1 -
-Only 41.7% of crime rate is being explained by our model. 
+####Model1 -
+Only 41.6% of crime rate is being explained by our model. 
 prbarr, prbconv has negative effect on crime. 
 While other independent variables prbpris and avgsen  has postive effect on crime.
 From the P-Values, crime rate fluctuates more with prbarr, prbconv
 
 This says that crime rate will decrease if people are arrested and convicted.
 
-#Model 2 - 
-78.2% of crime rate is being explained by this model. 
+####Model 2 - 
+78.4% of crime rate is being explained by this model. 
 Polpc, Density and Pctmin80 has a positive effect on crime. 
 While other independent variables prbarr,prbconv,prbpris,avgsen,taxpc,pctymle has negative effect on crime.
 From the P-Values, crime rate fluctuates more with prbarr, prbconv, density, pctmin80 and polpc
 and has some impact with prbpris and avgsen
 
-#Model 3 -
-78.1% of crime rate is being explained by this model. 
+####Model 3 -
+78.3% of crime rate is being explained by this model. 
 
 This says that crimerate decreases if more people are arrested, convicted, sentenced in prison 
 With better policing in place more crimes would  be identified. And as density increases crimerates tend to go up. Also, Minority has a positive impact on  crime. 
 
-#Model 4 -
-83.6% of crime rate is being explained by this model
+####Model 4 -
+83.5% of crime rate is being explained by this model
 Using All variables, we got a better AIC compared to Model 1 and very close to Model 2- But it is not a best fit model
 
-#Best-Fit Model
-Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.92602. 
+####Best-Fit Model
+Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.9529. 
 \newpage
 # Omitted Variables
 
