@@ -20,21 +20,18 @@ knitr::opts_chunk$set(echo = TRUE)
 \listoffigures
 \listoftables
 -->
-\newpage
 
 # Introduction (Stage 1: Draft Report)
 
-The team has been hired to provide research for a political campaign and help the campaign understand the
-determinants of crime and to help with policy suggestions that are applicable to local government.  
+Our team has been hired to provide research for a local political campaign to help the campaign understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
 
-```{r}
+```{r, result='asis'}
 library(knitr)
 library(kableExtra)
-library(car)
-library(stargazer)
-library(lmtest)
+suppressMessages(library(car))
+suppressMessages(library(stargazer))
+suppressMessages(library(lmtest))
 
-codebook <- read.csv('codebook.csv')
 crime <- read.csv('crime_v2.csv')
 
 # Convert columns to factors and logical.
@@ -43,6 +40,9 @@ crime$year <- as.factor(crime$year)
 crime$west <- as.logical(crime$west)
 crime$central <- as.logical(crime$central)
 crime$urban <- as.logical(crime$urban)
+```
+<!--
+codebook <- read.csv('codebook.csv')
 
 # Create a log of the dependent variable
 crime$logcrmrte <- log(crime$crmrte)
@@ -58,33 +58,20 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 # Reorder to place logcrmte next to crmrte and east next to central
 # It's unsafe to keep this in, but handy for viewing data
 #crime <- crime[,c(1,2,3,26,4:13,27,14:25,28)]
-
-```
+-->
 
 # Exploratory Data Analysis
 
 ##  Data Summary
 
-We were provided with a dataset of crime statistics for a selection of counties in North Carolina. After performing data clean up (outlined below) the data set contained 90 county observations each having 25 variables (onlined in the codebook found in Appendix A).
+We were provided with a dataset that included crime statistics from the North Carolina Department of Corrections prison and probation files, demographic statistic taken from census, police data computed using FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
-<!--
-From the assignment to incorporate above:
-The data on convictions is
-taken from the prison and probation files of the North Carolina Department of Correction.
-
-The percent young male variable records the proportion of the population that is male and between the ages
-of 15 and 24. This variable, as well as percent minority, was drawn from census data.
-
-The number of police per capita was computed from the FBI’s police agency employee counts.
-
-The variables for wages in different sectors were provided by the North Carolina Employment Security
-Commission.
--->
+Some of the values in this dataset were calculated from other datasets and we found some characteristics in the dataset which may bring its veracity in to question and we have addressed those below and in our analyses. 
 
 ### Data Clean Up
 
 #### Null Rows
-The dataset contained a an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We feel it is safe to remove these rows as they contain no data. 
+The dataset contained a an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We removed these rows as they contain no data. 
 ```{r}
 # Delete the 6 empty observations at the end, including the row with the apostrophe.
 # We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
@@ -93,10 +80,9 @@ crime = crime[complete.cases(crime), ]
 # Fix prbconv which is a factor rather than numeric due to the apostrophe
 # Convert from factor to numeric 
 crime$prbconv = as.numeric(as.character(crime$prbconv))
-
 ```
 
-We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional data, so we feel strongly that removing one of these two observations can only benefit our analysis. 
+We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional dataset, so we feel removing one of these two observations can only improve the quality of our analysis. 
 ```{r}
 # county 193 is duplidated, remove one
 crime = crime[!duplicated(crime), ]
@@ -105,25 +91,28 @@ crime = crime[!duplicated(crime), ]
 
 ### Concerns about data
 
-There are three probability columns in the given dataset. Check if any of the columns has invalid values - i.e., any of the columns have less than zero or greater than 1 values.
-
-<!--
-```{r}
-summary(crime$prbarr)[c(1,6)]
-summary(crime$prbconv)[c(1,6)]
-summary(crime$prbpris)[c(1,6)]
-
-nrow(crime[(crime$prbarr<0 | crime$prbarr>1), c('county', 'prbarr')])
-nrow(crime[(crime$prbconv<0 | crime$prbconv>1), c('county', 'prbconv')])
-```
--->
-
 #### prbarr (Probability of Arrest)
 We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a coding error, it is a ratio and not a probability.
 
 #### prbconv (Probability of Conviction)
 We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  The documentation in the codebook specifies that "(t)he probability of conviction is proxied by the ratio of convictions to arrests", which leaves some ambiguity, however it is plausible to have values greater than 1 as a single arrest can result in multiple convictions.
 
+#### Omitted Counties Creating Bias
+
+The dataset contained 90 counties, and there are 100 couties in North Carolina.  The observation id labeled 'county' in our data set appears to contain FIPS codes, if this assumption is correct the following are the missing counties.  
+
++ 29 - Camden County 
++ 31 - Carteret County 
++ 43 - Clay County 
++ 73 - Gates County 
++ 75 - Graham County 
++ 97 - Iredell County 
++ 103 - Jones County
++ 121 - Mitchell County
++ 177 - Tyrrell County
++ 199 - Yancey County
+
+These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
 
 ## Univariate Analysis
 
@@ -157,19 +146,20 @@ hist(log(variable),
   #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
   #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
-### Key Interests
+### Key Variable
 
 #### Crimes Committed Per Person
+
+
 **Campaign Significance**: Crime rate is a politicized and effects economy  
 
-This is the key variable we will be regressing to in our modeling. 
+This is the key variable we will be explaining in terms of other variables in most of our modeling. 
 ```{r, fig.height=4}
 par(mfrow=c(1,2))
 quick_uni_analysis(crime$crmrte, 'crimes committed per per.')
 ```
 
-
-Crimes committed per capita has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
+Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
 
 The transformed variable is preferable for modelling. 
 
@@ -192,8 +182,7 @@ quick_uni_analysis(crime$taxpc, 'tax revenue per capita', roundto = 16)
 
 quick_uni_analysis(crime$mix, 'Face-to-face offences to other', roundto = 9)
 quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
-
-par(mfrow=c(1,1))
+par(mfrow=c(1,1)) #Reset
 ```
 <!--
 ```{r, fig.height=10, fig.fullwidth = TRUE}
@@ -233,13 +222,23 @@ Both logged and un-logged versions of the percent of population that is young an
 
 $^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 
 
-#### Per. of Pop. That Are Young Males
+#### Percentage of Population That Are Young Males
+
+This variable has a strong positive skew, using a natural log transformation results in a still skewwed distirbution, however, it is closer to normal.
 
 #### People per Square Mile
 
-#### tax revenue per capita
+<!-- TODO -->
+ ------------------ ** Naga and Alex ** ------------------   
+
+This variable becomes less normal after log transformation, shifts skew to the negative, and more extreme.  I don't think we should be using the log of this.  We can change this before handing it in, after, or not at all. I'll update this later before handing in.
+
+
+
+#### Tax Revenue per Capita
 
 #### Face-to-face offences to Other (Offence Mix)
+
 This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence, hense the more severe crimes.  Focusing resources which reduces this ratio along with the overall crime rate would be more beneficial.   
 
 **Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
@@ -252,7 +251,7 @@ The transformed variable is preferable for modelling.
 
 
 
-\newpage
+
 
 # Model Analysis
 
@@ -725,12 +724,12 @@ We examined several models of crime rate and found a directionally consistent, s
 
 That said, our ability to draw policy prescriptions from our models is limited due to notable omitted variable bias, which leads our model's estimators to be biased. These omitted variable biases are not possible to overcome while limited to the current data collection process. Should more work requiring causal inference be desired on these relationships in the future, we would seek input into the data collecting process in order to correct for some of our omitted variable biases. 
 
-
+<!--
 \newpage
 # Appendix A: Codebook
 
 ```{r echo = FALSE, results = 'asis'}
-kable(codebook[, c(2,3,4)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
-  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
+#kable(codebook[, c(2,3,4)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
+#  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
 ```
-
+-->
