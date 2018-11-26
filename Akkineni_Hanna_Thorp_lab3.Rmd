@@ -6,6 +6,8 @@ output:
     pdf_document:
     toc: true
     toc_depth: 2
+    fig_height: 4
+    df_print: kable
     highlight: tango
 ---
 
@@ -98,7 +100,6 @@ We found two identical observations for county 193.  There is no logical reason 
 ```{r}
 # county 193 is duplidated, remove one
 crime = crime[!duplicated(crime), ]
-
 ```
 
 
@@ -106,24 +107,16 @@ crime = crime[!duplicated(crime), ]
 
 There are three probability columns in the given dataset. Check if any of the columns has invalid values - i.e., any of the columns have less than zero or greater than 1 values.
 
+<!--
 ```{r}
-#any(crime$prbarr<0 | crime$prbarr>1)
-#any(crime$prbconv<0 | crime$prbconv>1)
-#any(crime$prbpris<0 | crime$prbpris>1)
-
-#summary(crime$prbarr)
-#summary(crime$prbconv)
-
-
 summary(crime$prbarr)[c(1,6)]
 summary(crime$prbconv)[c(1,6)]
 summary(crime$prbpris)[c(1,6)]
 
 nrow(crime[(crime$prbarr<0 | crime$prbarr>1), c('county', 'prbarr')])
 nrow(crime[(crime$prbconv<0 | crime$prbconv>1), c('county', 'prbconv')])
-
-
 ```
+-->
 
 #### prbarr (Probability of Arrest)
 We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a coding error, it is a ratio and not a probability.
@@ -137,37 +130,32 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 ```{r}
 quick_uni_analysis = function(variable, description, roundto = 8) {
   hist(variable, xlab = paste(tools::toTitleCase(description),
-                              paste('\n Shapiro p-value:',
-                  round(as.numeric(shapiro.test(variable)[2]), roundto)
-                  )), 
-         main = ""
-     )
+        paste('\n Shapiro:',
+        round(as.numeric(shapiro.test(variable)[2]), roundto)
+        )), main = "")
   
-  hist(log(crime$crmrte), 
-       xlab = tools::toTitleCase(paste('Log of', description,
-                                       paste('\n Shapiro p-value:',
-                    round(as.numeric(shapiro.test(log(variable))[2]), roundto)
-                    ))), 
-           main = ""
-       )
-  var_shpr <- shapiro.test(variable)[2]
-  var_log_shpr <- shapiro.test(log(variable))[2]
-  table_out <- data.frame(shptst = var_shpr, shplogtst = var_log_shpr)
-  colnames(table_out) <- c('Shapiro test', 'Shapiro test log')
-
-  kable(table_out)
-  #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
-  #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
-
-
-    
+hist(log(variable), 
+     xlab = tools::toTitleCase(paste('Log of', description,
+            paste('\n Shapiro:', round(as.numeric(shapiro.test(log(variable))[2]), roundto)
+            ))),  main = "", ylab = '')
 }
+
 ```
+<!-- quick_uni_analysis_new = function(variable, description, roundto = 8) {
+  hist(variable, xlab = tools::toTitleCase(description), main = "")
+  hist(log(variable), xlab = tools::toTitleCase(paste("Log of", description)), main = "", ylab = '')
+}  
 
-### Log Transforms
-(just a screen cap for now)
 
-![](logtransforms.png)
+
+#  var_shpr <- shapiro.test(variable)[2]
+#  var_log_shpr <- shapiro.test(log(variable))[2]
+#  table_out <- data.frame(shptst = var_shpr, shplogtst = var_log_shpr)
+#  colnames(table_out) <- c('Shapiro test', 'Shapiro test log')
+
+#  kable(table_out)
+  #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
+  #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
 ### Key Interests
 
@@ -175,92 +163,93 @@ quick_uni_analysis = function(variable, description, roundto = 8) {
 **Campaign Significance**: Crime rate is a politicized and effects economy  
 
 This is the key variable we will be regressing to in our modeling. 
-
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
+```{r, fig.height=4}
+par(mfrow=c(1,2))
 quick_uni_analysis(crime$crmrte, 'crimes committed per per.')
 ```
+
 
 Crimes committed per capita has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
 
 The transformed variable is preferable for modelling. 
 
-#### Offence Mix (this leads to a model with mix as the dependent var, we can move this section down)
-<!-- TODO -->
-This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence, hense the more severe crimes.  Focusing resources which reduces this ratio along with the overall crime rate would be more beneficial.   
-
-**Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
-
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$mix, 'face-to-face crimes to others')
-```
-
-Mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution however, the resultingShapiro-Wilk test would be rejected at 0.039.  That said, the log transformation is   
-
-The transformed variable is preferable for modelling.
-
 ### Explanatory
 
-#### Probability of Arrest
-```{r, fig.height=3, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$prbarr, 'Probability of Arrest')
+#### Diagrams of Key Variables With and Without Log Transformations
+```{r, fig.height=10, fig.fullwidth = TRUE}
+par(mfrow=c(5,4))
+quick_uni_analysis(crime$prbarr, 'Probability of Arrest', roundto = 10)
+quick_uni_analysis(crime$prbconv, 'Probability of Conviction', roundto = 10)
+
+quick_uni_analysis(crime$prbpris, 'Probability of Prison')
+quick_uni_analysis(crime$avgsen, 'Average Sentence')
+
+quick_uni_analysis(crime$polpc, 'Police as Per. of Pop.', roundto = 15)
+quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males', roundto = 15)
+
+quick_uni_analysis(crime$density, 'people per sq. mile', roundto = 14)
+quick_uni_analysis(crime$taxpc, 'tax revenue per capita', roundto = 16)
+
+quick_uni_analysis(crime$mix, 'Face-to-face offences to other', roundto = 9)
+quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
+
+par(mfrow=c(1,1))
 ```
+<!--
+```{r, fig.height=10, fig.fullwidth = TRUE}
+#par(mfrow=c(3,3))
+#boxplot(crime$prbarr, xlab = 'Probability of Arrest', notch = TRUE)
+```
+-->
+
+#### Probability of Arrest
 
 Probability of Arrest has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
 
 The transformed variable is preferable for modelling.
 
 #### Probability of Conviction
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$prbconv, 'Probability of Conviction')
-```
 
 Log is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
 
 #### Probability of Prison
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$prbpris, 'Probability of Prison')
-```
 
 From an interpretation standpoint, the logged version is preferable, although from an modeling assumption standpoint, the unlogged version is preferable. 
 
 #### Average Sentence
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$avgsen, 'Average Sentence')
-```
 
 The logged version is preferable from both an interpretation and modeling assumption standpoint.
 
 #### Police as a Percentage of Population
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$polpc, 'Police as Per. of Pop.')
-
-```
 
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
-The inclusion of this variable in a model needs to take in to consideration that an increase in crime can cause an increase in the number of police blah blah blah <!-- TODO -->.  Without timeseries data including changes to Police as a Percentage of Population we cannon determine the true effects.  However, many studies show that increasing the size of a police force does reduce crime.
+The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$  <!-- TODO -->.  Without timeseries data including changes to Police as a Percentage of Population we cannon determine the true effects.  However, many studies show that increasing the size of a police force does reduce crime.
 <!-- 
 http://www.princeton.edu/~smello/papers/cops.pdf 
-https://www.jstor.org/stable/10.1086/666614 (VPN Needed Kevin has a copy)
 -->
-
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males')
-```
 
 Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$density, 'people per sq. mile')
-plot(log(crime$density))
-boxplot(log(crime$density))
-plot(crime$logcrmrte)
-boxplot(crime$logcrmrte)
-```
+$^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 
 
-```{r, fig.height=2.5, fig.width=3, fig.show='hold'}
-quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
-```
+#### Per. of Pop. That Are Young Males
+
+#### People per Square Mile
+
+#### tax revenue per capita
+
+#### Face-to-face offences to Other (Offence Mix)
+This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence, hense the more severe crimes.  Focusing resources which reduces this ratio along with the overall crime rate would be more beneficial.   
+
+**Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
+
+Mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution however, the resultingShapiro-Wilk test would be rejected at 0.039.  That said, the log transformation is   
+
+The transformed variable is preferable for modelling.
+
+#### Percentage Minority, 1980
+
 
 
 \newpage
@@ -286,7 +275,12 @@ crime$log_pctymle <- log(crime$pctymle)
 Crime-Determinants: we anticipate crime rate depends on average sentencing as higher crime rate tends to have higher sentencing. And Increased avgsen suggests there are severe crimes happening in a given county.
 The two probability variables prbarr and prbconv will have strong correlations with prbpris and so we are including them as well in our model so that we can measure how much these variables influence crime rate.
 
-$$log(crmrte)=\beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) +\beta_4log(avgsen) + u$$
+$$
+\begin{aligned}
+log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \\
+&\beta_3log(prbpris) +\beta_4log(avgsen) + u
+\end{aligned}
+$$
 
 
 ```{r}
@@ -386,7 +380,13 @@ Density - The team is intereseted to see how density is altering crime  rates. T
 Income Variables - The team expects that higher tax money means less crimes. Similar crimes would be less with better policing. So, we are inclduing polpc and taxpc variables in our model.
 
 
-$$log(crmrte)=\beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) +\beta_4log(avgsen)+ \beta_5log(polpc) + \beta_6log(taxpc) +\beta_7log(density)+\beta_8log(pctymle)+\beta_9log(pctmin80)+ u$$
+$$
+\begin{aligned}
+log(crmrte) &=\beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\ 
+&\beta_4log(avgsen)+ \beta_5log(polpc) + \beta_6log(taxpc) + \\ 
+&\beta_7log(density)+\beta_8log(pctymle)+\beta_9log(pctmin80)+ u
+\end{aligned}
+$$
 
 
 ```{r}
@@ -678,6 +678,7 @@ The AIC for this model is 30.78825
 summary(model4)
 ```
 
+
 Looking at the summary of model2, 78.26% of crime rate is being explained by our  model. 
 Looking at the co-efficient values -> Polpc, Density and Pctmin80 has a positive effect on crime. 
 While other independent variables prbarr,prbconv,prbpris,avgsen has negative effect on crime.
@@ -686,6 +687,7 @@ and has some impact with prbpris and avgsen
 
 This says that crimerate decreases if more people are arrested, convicted, sentenced in prison 
 With better policing in place more crimes would  be identified. And as density increases crimerates tend to go up. Also, Minority has a positive impact on  crime. 
+
 
 \newpage
 # Omitted Variables
