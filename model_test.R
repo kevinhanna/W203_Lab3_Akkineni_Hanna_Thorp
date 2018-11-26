@@ -69,10 +69,10 @@ head(sortedResults, 20)
 
 
 
-load('results4var.rdata')
+load('results4varlogcrmrte.rdata')
 res4vars = results
 
-load('results5var.rdata')
+load('results4varcrmrte.rdata')
 res5vars = results
 
 allres = rbind(res4vars, res5vars)

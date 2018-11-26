@@ -274,13 +274,41 @@ crime$west + crime$central
 ```
 
 ```{r}
+
+crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir + crime$wser + crime$wmfg + crime$wfed + crime$wsta + crime$wloc)/9
+
 cn = colnames(crime)
-cnlen = length(cn)-1
+cnlen = length(cn)
+results = data.frame()
 
-for (i in 1:cnlen) {
-  mod1nl = ln(as.formula(paste("crime$crmrte ~", cn[i], "data=crime")))
+for (i in 5:cnlen) {
   
-
+  if (!0 %in% crime[,cn[i]] & !FALSE %in% crime[,cn[i]]) {
+  
+  var = crime[,cn[i]]
+  varlog = log(crime[,cn[i]])
+  
+  print(cn[i])
+  mod1 = lm(crime$crmrte ~ var)
+  mod2 = lm(crime$logcrmrte ~ var)
+  mod3 = lm(crime$logcrmrte ~ varlog)
+  mod4 = lm(crime$crmrte ~ varlog)
+#  mod2  = lm(as.formula(paste("logcrmrte ~", cn[i])), data=crime)
+#  mod3  = lm(as.formula(paste("logcrmrte ~", log(cn[i]))), data=crime)
+#  mod4  = lm(as.formula(paste("crmrte ~", log(cn[i]))), data=crime)
+  
+  results = rbind(results, data.frame(var=cn[i],
+                                      rsquared_level_level=summary(mod1)[8],
+                                      rsquared_log_level=summary(mod2)[8],
+                                      rsquared_log_log=summary(mod3)[8],
+                                      rsquared_level_log=summary(mod4)[8],
+                                      tvalue_level_level=summary(mod1)$coefficients[2,4],
+                                      tvalue_log_level=summary(mod2)$coefficients[2,4],
+                                      tvalue__log_log=summary(mod3)$coefficients[2,4],
+                                      tvalue_level_log=summary(mod4)$coefficients[2,4]
+                                      ))  
   }
+
+}
 ```
 
