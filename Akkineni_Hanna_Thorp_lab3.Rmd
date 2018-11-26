@@ -1,6 +1,6 @@
 ---
 title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
-author: "N. Akkineni, A. Thorp, K. Hanna"
+author: "N. Akkineni, K. Hanna, A. Thorp"
 date: "November 27, 2018"
 output:
     pdf_document:
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction (Stage 1: Draft Report)
 
-Our team has been hired to provide research for a local political campaign to help the campaign understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
+Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
 
 ```{r, result='asis'}
 library(knitr)
@@ -64,14 +64,14 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 
 ##  Data Summary
 
-We were provided with a dataset that included crime statistics from the North Carolina Department of Corrections prison and probation files, demographic statistic taken from census, police data computed using FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
+We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
 Some of the values in this dataset were calculated from other datasets and we found some characteristics in the dataset which may bring its veracity in to question and we have addressed those below and in our analyses. 
 
 ### Data Clean Up
 
 #### Null Rows
-The dataset contained a an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We removed these rows as they contain no data. 
+The dataset contained an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We removed these rows as they contain no data. 
 ```{r}
 # Delete the 6 empty observations at the end, including the row with the apostrophe.
 # We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
@@ -84,7 +84,7 @@ crime$prbconv = as.numeric(as.character(crime$prbconv))
 
 We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional dataset, so we feel removing one of these two observations can only improve the quality of our analysis. 
 ```{r}
-# county 193 is duplidated, remove one
+# county 193 is duplicated, remove one
 crime = crime[!duplicated(crime), ]
 ```
 
@@ -92,10 +92,10 @@ crime = crime[!duplicated(crime), ]
 ### Concerns about data
 
 #### prbarr (Probability of Arrest)
-We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a coding error, it is a ratio and not a probability.
+We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
 
 #### prbconv (Probability of Conviction)
-We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  The documentation in the codebook specifies that "(t)he probability of conviction is proxied by the ratio of convictions to arrests", which leaves some ambiguity, however it is plausible to have values greater than 1 as a single arrest can result in multiple convictions.
+We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  The documentation in the codebook specifies that "(t)he probability of conviction is proxied by the ratio of convictions to arrests", which leaves some ambiguity, however it is plausible to have values greater than 1 as a single arrest can result in multiple convictions and persons can be convicted in absentia. Similar to the prbarr, we beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
 
 #### Omitted Counties Creating Bias
 
@@ -150,18 +150,12 @@ hist(log(variable),
 
 #### Crimes Committed Per Person
 
-
-**Campaign Significance**: Crime rate is a politicized and effects economy  
-
-This is the key variable we will be explaining in terms of other variables in most of our modeling. 
+**Campaign Significance**: The political campaign which hired us is interested in policy prescriptions derived from causal analysis of crime rates.  This is the key variable our models will attempt to explain.
 ```{r, fig.height=4}
 par(mfrow=c(1,2))
-quick_uni_analysis(crime$crmrte, 'crimes committed per per.')
+quick_uni_analysis(crime$crmrte, 'crimes committed per capita')
 ```
-
-Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
-
-The transformed variable is preferable for modelling. 
+Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject. The transformed variable is preferable for modelling. 
 
 ### Explanatory
 
@@ -193,13 +187,11 @@ par(mfrow=c(1,1)) #Reset
 
 #### Probability of Arrest
 
-Probability of Arrest has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject.  
-
-The transformed variable is preferable for modelling.
+Probability of Arrest has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject the null hypothesis of normality. The transformed variable is preferable for modelling.
 
 #### Probability of Conviction
 
-Log is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
+The log transform is preferable - both for interpretation and for better adhering to modeling assumptions. However, even the logged version fails a Shapiro-Wilk normality test. Something to keep in mind.
 
 #### Probability of Prison
 
@@ -213,39 +205,33 @@ The logged version is preferable from both an interpretation and modeling assump
 
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
-The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$  <!-- TODO -->.  Without timeseries data including changes to Police as a Percentage of Population we cannon determine the true effects.  However, many studies show that increasing the size of a police force does reduce crime.
+The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$  <!-- TODO -->.  Without timeseries data with randomized changes to Police as a Percentage of Population we cannon determine the causal impact of increasing or decreasing police.  However, many other studies show that increasing the size of a police force does reduce crime.
 <!-- 
 http://www.princeton.edu/~smello/papers/cops.pdf 
 -->
 
-Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
-
-$^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 
+Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. $^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 
 
 #### Percentage of Population That Are Young Males
 
-This variable has a strong positive skew, using a natural log transformation results in a still skewwed distirbution, however, it is closer to normal.
+This variable has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
 
 #### People per Square Mile
 
 <!-- TODO -->
  ------------------ ** Naga and Alex ** ------------------   
 
-This variable becomes less normal after log transformation, shifts skew to the negative, and more extreme.  I don't think we should be using the log of this.  We can change this before handing it in, after, or not at all. I'll update this later before handing in.
-
-
+This variable becomes less normal after log transformation, as skew shifts to the negative and becomes more extreme.  We elect to keep the untransformed variable for our regressions. 
 
 #### Tax Revenue per Capita
 
 #### Face-to-face offences to Other (Offence Mix)
 
-This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence, hense the more severe crimes.  Focusing resources which reduces this ratio along with the overall crime rate would be more beneficial.   
+This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence. 
 
 **Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
 
-Mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution however, the resultingShapiro-Wilk test would be rejected at 0.039.  That said, the log transformation is   
-
-The transformed variable is preferable for modelling.
+The mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution. However, the resulting Shapiro-Wilk test would still reject the null hypothesis of normality.  That said, the log transformation is preferable for modelling.
 
 #### Percentage Minority, 1980
 
@@ -270,7 +256,7 @@ crime$log_pctymle <- log(crime$pctymle)
 
 #### Model1 - Minimum Specification
 
-Crime-Determinants: we anticipate crime rate depends on average sentencing as higher crime rate tends to have higher sentencing. And Increased avgsen suggests there are severe crimes happening in a given county.
+Crime-Determinants: we anticipate that the crime rate depends on average sentencing as higher crime rate tends to have higher sentencing. And Increased avgsen suggests there are severe crimes happening in a given county.
 The two probability variables prbarr and prbconv will have strong correlations with prbpris and so we are including them as well in our model so that we can measure how much these variables influence crime rate.
 
 $$
