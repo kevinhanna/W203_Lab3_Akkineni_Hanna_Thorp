@@ -63,7 +63,7 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 
 # Exploratory Data Analysis
 
-#Data Summary
+# Data Summary
 
 We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
@@ -90,7 +90,7 @@ crime = crime[!duplicated(crime), ]
 ```
 
 
-###Concerns about data
+### Concerns about the data
 
 #### prbarr (Probability of Arrest)
 We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
@@ -115,7 +115,7 @@ The dataset contained 90 counties, and there are 100 couties in North Carolina. 
 
 These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
 
-##Univariate Analysis
+## Univariate Analysis
 
 ```{r}
 quick_uni_analysis = function(variable, description, roundto = 8) {
@@ -147,7 +147,7 @@ hist(log(variable),
   #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
   #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
-###Key Variable
+### Key Variable
 
 #### Crimes Committed Per Person
 
@@ -158,7 +158,7 @@ quick_uni_analysis(crime$crmrte, 'crimes committed per person')
 ```
 Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject. The transformed variable is preferable for modelling. 
 
-### Explanatory
+### Explanatory Variables
 
 #### Diagrams of Key Variables With and Without Log Transformations
 ```{r, fig.height=10, fig.fullwidth = TRUE}
@@ -206,7 +206,11 @@ The logged version is preferable from both an interpretation and modeling assump
 
 Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
 
-The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$  <!-- TODO -->.  Without timeseries data with randomized changes to Police as a Percentage of Population we cannon determine the causal impact of increasing or decreasing police.  However, many other studies show that increasing the size of a police force does reduce crime.
+<!--
+I agree with Alex now, this is redunant with the omitted variable secion on this variable.
+
+The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$ .  Without timeseries data with randomized changes to Police as a Percentage of Population we cannon determine the causal impact of increasing or decreasing police.  However, many other studies show that increasing the size of a police force does reduce crime.
+-->
 <!-- 
 http://www.princeton.edu/~smello/papers/cops.pdf 
 -->
@@ -226,6 +230,8 @@ This variable becomes less normal after log transformation, as skew shifts to th
 
 #### Tax Revenue per Capita
 
+Tax revenue per capita has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
+
 #### Face-to-face offences to Other (Offence Mix)
 
 This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence. 
@@ -236,7 +242,7 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 
 #### Percentage Minority, 1980
 
-
+** Same issue as density **
 
 # Model Analysis
 Transforming the variables and storing them in the data frame
@@ -272,27 +278,31 @@ $$
 model1 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+
               log(prbpris) +  log(avgsen), data = crime)
 ```
-####Checking if our Multiple Linear Regression Assumptions are valid in the model- 
+#### Checking if our Multiple Linear Regression Assumptions are valid in the model- 
 
-####Assumption - Linear model 
-```{r , fig.height=3, fig.width=3, fig.show='hold'}
-plot(model1, which=1)
+#### Assumption - Linear model 
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model1, which=1, cex.sub=0.75)
 ```
 
 from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
 So, it is a VALID Assumption.
 
-####Assumption - Random Sampling
+#### Assumption - Random Sampling
 Since the dataset has counties information from only few regions it is not truly randomly sampled. But, we were provided with information that how the data is collected. Based on this 
 we think it is a VALID Assumption.
 
-####Assumption - Multicollinearity
+#### Assumption - Multicollinearity
 
 ```{r}
+# Find the maximum Correlation
 cor_model1 <- data.matrix(subset(crime,
            select = c("log_crmrte","log_prbarr","log_prbconv","log_prbpris","log_avgsen")))
-cor(cor_model1)
+cor_model1 = cor(cor_model1)
+diag(cor_model1) = 0 # Zero the diagonal as we are uninterested in those.
+max(cor_model1)
 ```
+
 We are not seeing any obvious signs of multicollinearity.
 Running some additional tests.
 
@@ -303,12 +313,12 @@ vif(model1)
 Computing VIF also indicates that there is no multicollinearity. 
 So, it is a VALID Assumption.
 
-####Assumption - 4 Exogeneity (Zero Conditional Mean)
+#### Assumption - 4 Exogeneity (Zero Conditional Mean)
 From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. 
 It is a Most-Likely valid Assumption.
 
-####Additional Assumptions 
-####Homoscedasticity
+#### Additional Assumptions 
+#### Homoscedasticity
 From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 
 ```{r}
@@ -322,7 +332,7 @@ ncvTest(model1)
 Both tests are showing small p-values showing that we have to reject the hypothesis. 
 So Homoscedasticity is not a valid assumption here indicating that our explanatory variables may not be not able to explain crime rate highly significant. 
 
-####Normality of Residuals
+#### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=2)
 hist(model1$residuals,main="Model1 Residuals")
@@ -332,7 +342,7 @@ hist(model1$residuals,main="Model1 Residuals")
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
 So, it is a VALID assumption.
 
-####Cook's Distance:
+#### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=4)
 plot(model1, which=5)
@@ -370,27 +380,33 @@ model2 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +  log(avgsen
             + log(polpc) + log(taxpc)+ log(density) +  log(pctymle) + log(pctmin80), data = crime)
 ```
 #### Checking if our Assumptions are valid in the model- 
-####Assumption - Linear model 
-```{r , fig.height=3, fig.width=3, fig.show='hold'}
-plot(model2, which=1)
+#### Assumption - Linear model 
+
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model2, which=1, cex.sub=0.75)
 ```
 
 from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
 So, it is a VALID Assumption.
 
-####Assumption - Random Sampling
+#### Assumption - Random Sampling
 As we are using the same data set - From Model1, it is a VALID Assumption.
 
-####Assumption - Multicollinearity
+#### Assumption - Multicollinearity
 
 ```{r}
+# Find the maximum Correlation
 cor_model2 <- data.matrix(subset(crime, 
    select = c("log_crmrte","log_prbarr","log_prbconv","log_prbpris",
     "log_avgsen",   "log_polpc","log_taxpc","log_density", "log_pctymle","log_pctmin80")))
-cor(cor_model2)
+cor_model2 = cor(cor_model2)
+diag(cor_model2) = 0 # Zero the diagonal as we are uninterested in those.
+max(cor_model2)
 ```
+
 We are not seeing any obvious signs of multicollinearity. 
 Runnig some additional tests
+
 ```{r}
 vif(model2)
 ```
@@ -398,11 +414,11 @@ vif(model2)
 Computing VIF also indicates that there is no multicollinearity. 
 So, it is a VALID Assumption.
 
-####Assumption - Exogeneity (Zero Conditional Mean)
+#### Assumption - Exogeneity (Zero Conditional Mean)
 From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
 It is a Most-Likely valid Assumption.
 
-####Additional Assumptions - Homoscedasticity
+#### Additional Assumptions - Homoscedasticity
 From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 Running some additional tests
 ```{r}
@@ -453,25 +469,29 @@ model3 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(polpc) +
               log(density)  + log(pctmin80) +log(prbpris) + log(avgsen) , data = crime)
 ```
 #### Checking if our Assumptions are valid in the model- 
-####Assumption - Linear model 
-```{r, fig.height=3, fig.width=3, fig.show='hold' }
-plot(model3, which=1)
+#### Assumption - Linear model 
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model3, which=1, cex.sub=0.75)
 ```
 
 from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
 So, it is a VALID Assumption.
 
-####Assumption - Random Sampling
+#### Assumption - Random Sampling
 As we are using the same data set - From Model1, it is a VALID Assumption.
 
-####Assumption - Multicollinearity
+#### Assumption - Multicollinearity
 
 ```{r}
+# Find the maximum Correlation
 cor_model3 <- data.matrix(subset(crime,
                                  select = c("log_crmrte","log_prbarr","log_prbconv", 
                                             "log_avgsen","log_polpc","log_density","log_pctmin80")))
-cor(cor_model3)
+cor_model3 = cor(cor_model3)
+diag(cor_model3) = 0 # Zero the diagonal as we are uninterested in those.
+max(cor_model3)
 ```
+
 We are not seeing any obvious signs of multicollinearity. 
 Running some additional tests
 ```{r}
@@ -481,11 +501,11 @@ vif(model3)
 Computing VIF also indicates that there is no multicollinearity. 
 So, it is a VALID Assumption.
 
-####Assumption - Exogeneity (Zero Conditional Mean)
+#### Assumption - Exogeneity (Zero Conditional Mean)
 From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
 It is a Most-Likely valid Assumption.
 
-####Additional Assumptions - Homoscedasticity
+#### Additional Assumptions - Homoscedasticity
 From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 Running some additional tests
 ```{r}
@@ -499,7 +519,7 @@ ncvTest(model3)
 Both tests are showing small p-values showing that we fail to reject the null hypothesis. 
 So Homoscedasticity is a VALID assumption here. 
 
-####Normality of Residuals
+#### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model3, which=2)
 hist(model3$residuals,main="Model3 Residuals")
@@ -507,7 +527,7 @@ hist(model3$residuals,main="Model3 Residuals")
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
 So, it is a VALID assumption.
 
-####Cook's Distance:
+#### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model3, which=4)
 plot(model3, which=5)
@@ -542,19 +562,19 @@ model4 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +
               log(mix) + log(pctymle), data = crime)
 ```
 #### Checking if our Assumptions are valid in the model- 
-####Assumption - Linear model 
+#### Assumption - Linear model 
 The specified model has the dependent variable linear with explanatory variables 
-```{r, fig.height=3, fig.width=3, fig.show='hold'}
-plot(model4, which=1)
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model4, which=1, cex.sub=0.75)
 ```
 
 from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
 So, it is a VALID Assumption.
 
-####Assumption - Random Sampling
+#### Assumption - Random Sampling
 As we are using the same data set - From Model1, it is a VALID Assumption.
 
-####Assumption - Multicollinearity
+#### Assumption - Multicollinearity
 Running tests for Multicollinearity
 ```{r}
 vif(model4)
@@ -563,11 +583,11 @@ vif(model4)
 Computing VIF indicates that there is no multicollinearity. 
 So, it is a VALID Assumption.
 
-####Assumption - Exogeneity (Zero Conditional Mean)
+#### Assumption - Exogeneity (Zero Conditional Mean)
 From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
 It is a Most-Likely valid Assumption.
 
-####Additional Assumptions - Homoscedasticity
+#### Additional Assumptions - Homoscedasticity
 From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 Running some additional tests
 ```{r}
@@ -581,7 +601,7 @@ ncvTest(model4)
 Both tests are showing small p-values showing that we fail to accept the hypothesis. 
 So Homoscedasticity is a most likely valid assumption here. 
 
-####Normality of Residuals
+#### Normality of Residuals
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=2)
 hist(model4$residuals,main="Model4 Residuals")
@@ -589,14 +609,14 @@ hist(model4$residuals,main="Model4 Residuals")
 
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
 So, it is a VALID assumption.
-####Cook's Distance:
+#### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=4)
 plot(model4, which=5)
 
 ```
 There are some influential values [25,79,84] however cook's distance is within the bounds
-####Calculating AIC
+#### Calculating AIC
 ```{r}
 AIC(model4)
 ```
@@ -613,7 +633,7 @@ stargazer(model1, model2,model3, model4, type = "latex",
          dep.var.caption  = "Measuring Crime Rate",
          dep.var.labels   = "Crime Rate")
 ```
-####Model1 -
+#### Model1 -
 Only 41.6% of crime rate is being explained by our model. 
 prbarr, prbconv has negative effect on crime. 
 While other independent variables prbpris and avgsen  has postive effect on crime.
@@ -621,27 +641,40 @@ From the P-Values, crime rate fluctuates more with prbarr, prbconv
 
 This says that crime rate will decrease if people are arrested and convicted.
 
-####Model 2 - 
+#### Model 2 - 
 78.4% of crime rate is being explained by this model. 
 Polpc, Density and Pctmin80 has a positive effect on crime. 
 While other independent variables prbarr,prbconv,prbpris,avgsen,taxpc,pctymle has negative effect on crime.
 From the P-Values, crime rate fluctuates more with prbarr, prbconv, density, pctmin80 and polpc
 and has some impact with prbpris and avgsen
 
-####Model 3 -
+#### Model 3 -
 78.3% of crime rate is being explained by this model. 
 
 This says that crimerate decreases if more people are arrested, convicted, sentenced in prison 
 With better policing in place more crimes would  be identified. And as density increases crimerates tend to go up. Also, Minority has a positive impact on  crime. 
 
-####Model 4 -
+#### Model 4 -
 83.5% of crime rate is being explained by this model
 Using All variables, we got a better AIC compared to Model 1 and very close to Model 2- But it is not a best fit model
 
-####Best-Fit Model
+#### Best-Fit Model
 Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.9529. 
 
 # Omitted Variables
+
+<!--
+
+TODO Alex
+
+Some toughts on wealth inequality.
+1. A larger pay gap would mean more variance, thus more poverty for otherwise similar mean.
+2. It is poverty that is related to crime, not the pay gap.
+3. Poverty is partially captured by tax and wage as it will take the mean down in a similar way
+
+I feel in many of the cases, we're actually looking for say, percentage of people below the poverty line, or at several levels.  Otherwise we're wishing to replace a proxy with a proxy. 
+
+-->
 
 In order to make valid policy recommendations, we need confidence that our estimated coefficients for policy-relevant variables are unbiased, statistically significant, and practically significant. Statistical software makes it quite easy to determine if there is a relationship between a given variable and the dependent variable that is statistically significantly different from zero - an area of analysis that we will expand upon in follow-ups to this piece. Practical significance of our estimates requires just one extra step to interpret the meaning of the estimate for each variable under consideration. Accounting for elements which could bias our estimates is more difficult and, to some degree, not a solvable problem.  
 
@@ -651,16 +684,16 @@ Our ideal model of the causes of the crime rate would be something like:
 
 $$
 \begin{aligned}
-crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3wealth\_inequality\ + \\ &\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}percent\_of\_population\_previously\_committed\_crime + 
-\beta_{11}percent\_of\_population\_previously_imprisoned + ... + error
+crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3wealth\_inequality\ + \\ &\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}percent\_of\_population\_previously\_committed\_crime + \\
+&\beta_{11}percent\_of\_population\_previously_imprisoned + ... + error
 \end{aligned}
 $$
 
 Unfortunately, we are unable to observe virtually all of these concepts.  
 
-Some concepts have been operationalized in our dataset. For example, certainty of punishment has been operationalized through three variables: 1) the percent of the population which are police, 2) the proportion of arrests to crimes, and 3) the proportion of convictions to arrest. This is among the most effective operationlizations in this dataset. Severity of punishment is also operationalized  through 1) the proportion of convictions that result in a prison sentence and 2) the average length of a prison sentence. Nominal wages are operationalized in the dataset with average wages for certain industry groupings. None of ealth inequality within a given observation, education, social cohesion, weapon availability, cost of living, or the low skill unemployment rate are operationalized within this dataset.  
+Some concepts have been operationalized in our dataset. For example, certainty of punishment has been operationalized through three variables: 1) the percent of the population which are police, 2) the proportion of arrests to crimes, and 3) the proportion of convictions to arrest. This is among the most effective operationlizations in this dataset. Severity of punishment is also operationalized  through 1) the proportion of convictions that result in a prison sentence and 2) the average length of a prison sentence. Nominal wages are operationalized in the dataset with average wages for certain industry groupings. None of wealth inequality within a given observation, education, social cohesion, weapon availability, cost of living, or the low skill unemployment rate are operationalized within this dataset.  
 
-Moreover, certain variables which are included in our dataset are likely correlated with many of our desired variables, but actually measure something distinct - introducing the possibility for model estimates based on those variables to be biased and thus misleading. For example, the pctmin80 variable measures the percent of a county that was minority in 1980 - 7 years prior to our other observations. Setting the time divergence aside and extrapolating from national trends in the U.S. in the 1980s, the percentage of a county which is minority is likely negatively correlated with education. It may also exhibit a parabolic relation with wealth inequality and social cohesion. If we were to include pctmin80 in our regression, we would expect the model estimate to be biased as we have not adjusted for the impacts of education, wealth inequality, or social cohesion. Examining the impact of education alone on the estimator for pctmin80 - as education was likely negatively correlated with pctmin80, and we expect educated to be negatively related to the crime rate, the model's estimate of the impact of the percent of a county which was minority in 1980 would be upwardly biased. In other words, the estimator for pctmin80 in the underspecified model would imply a much larger relationship between pctmin80 and crime rate than actually exists.  
+Moreover, certain variables that are included in our dataset are likely correlated with many of our desired variables, but actually measure something distinct - introducing the possibility for model estimates based on those variables to be biased and thus misleading. For example, the pctmin80 variable measures the percent of a county that was minority in 1980 - 7 years prior to our other observations. Setting the time divergence aside and extrapolating from national trends in the U.S. in the 1980s, the percentage of a county that that belongs to a minority class could be the result of *red lining*, a segregatting practice which led to poverty and low-quality education, both possitively correlated with crime rate. It may also exhibit a parabolic relation with wealth inequality and social cohesion. If we were to include pctmin80 in our regression, we would expect the model estimate to be biased as we have not adjusted for the impacts of education, wealth inequality, or social cohesion. Examining the impact of education alone on the estimator for pctmin80 - as education was likely negatively correlated with pctmin80, and we expect educated to be negatively related to the crime rate, the model's estimate of the impact of the percent of a county which was minority in 1980 would be upwardly biased. In other words, the estimator for pctmin80 in the underspecified model would imply a much larger relationship between pctmin80 and crime rate than actually exists.  
 
 Similarly, our dataset contains a variable density which is likely correlated with two of our desired but unobserved explanatory variables: social cohesion and wealth inequality. In practice, in the U.S. in the 1980s, we would expect social cohesion to be negatively correlated with density, while wealth inequality would be positively correlated with density. We expect the beta for social cohesion to crime rate to be negative, while the beta for wealth inequality to crime rate is expected to be positive. The impact of both of these omitted variables is that the model's estimate for density is likely upwardly biased. As with pctmin80, the model would again overestimate the impact of density on crime rate.  
 
