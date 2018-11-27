@@ -2,6 +2,7 @@
 title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
 author: "N. Akkineni, K. Hanna, A. Thorp"
 date: "November 27, 2018"
+geometry: margin=2.2cm
 output:
     pdf_document
 ---
