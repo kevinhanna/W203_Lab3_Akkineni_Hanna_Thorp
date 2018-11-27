@@ -199,12 +199,13 @@ Both logged and un-logged versions of the percent of population that is young an
 
 This variable has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
 
+<!--
 #### People per Square Mile
 
-<!-- TODO -->
  ------------------ ** Naga and Alex ** ------------------   
 
 This variable becomes less normal after log transformation, as skew shifts to the negative and becomes more extreme.  We elect to keep the untransformed variable for our regressions. 
+-->
 
 #### Tax Revenue per Capita
 
@@ -217,11 +218,11 @@ This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes
 **Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
 
 The mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution. However, the resulting Shapiro-Wilk test would still reject the null hypothesis of normality.  That said, the log transformation is preferable for modelling.
-
+<!--
 #### Percentage Minority, 1980
 
 ** Same issue as density **
-
+-->
 # Model Analysis
 Transforming the variables and storing them in the data frame
 
