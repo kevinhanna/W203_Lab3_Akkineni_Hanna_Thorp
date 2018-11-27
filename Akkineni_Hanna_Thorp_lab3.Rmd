@@ -3,25 +3,12 @@ title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
 author: "N. Akkineni, K. Hanna, A. Thorp"
 date: "November 27, 2018"
 output:
-    pdf_document:
-    toc: true
-    toc_depth: 1
-    fig_height: 3
-    df_print: kable
-    highlight: tango
+    pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-\tableofcontents 
-
-<!--
-\listoffigures
-\listoftables
--->
-
 # Introduction (Stage 1: Draft Report)
 
 Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
@@ -60,7 +47,6 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 # It's unsafe to keep this in, but handy for viewing data
 #crime <- crime[,c(1,2,3,26,4:13,27,14:25,28)]
 -->
-
 # Exploratory Data Analysis
 
 # Data Summary
@@ -75,20 +61,18 @@ Some of the values in this dataset were calculated from other datasets and we fo
 The dataset contained an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We removed these rows as they contain no data. 
 ```{r}
 # Delete the 6 empty observations at the end, including the row with the apostrophe.
-# We can use complete.cases to do this as these 6 observations are the only incomplete observations. 
-crime = crime[complete.cases(crime), ]
+crime <- crime[!is.na(crime$county) & !is.na(crime$crmrte), ]
 
-# Fix prbconv which is a factor rather than numeric due to the apostrophe
-# Convert from factor to numeric 
+# Convert prbconv to numeric
 crime$prbconv = as.numeric(as.character(crime$prbconv))
 ```
 
 We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional dataset, so we feel removing one of these two observations can only improve the quality of our analysis. 
+
 ```{r}
 # county 193 is duplicated, remove one
 crime = crime[!duplicated(crime), ]
 ```
-
 
 ### Concerns about the data
 
@@ -100,8 +84,8 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 
 #### Omitted Counties Creating Bias
 
-The dataset contained 90 counties, and there are 100 couties in North Carolina.  The observation id labeled 'county' in our data set appears to contain FIPS codes, if this assumption is correct the following are the missing counties.  
-
+The dataset contained 90 counties, and there are 100 couties in North Carolina.  The observation id labeled 'county' in our data set appears to contain FIPS codes, if this assumption is correct the following are the missing counties: Camden County, Carteret County, Clay County, Gates County, Graham County, Iredell County, Jones County, Mitchell County, Tyrrell County and Yancey County
+<!--
 + 29 - Camden County 
 + 31 - Carteret County 
 + 43 - Clay County 
@@ -112,6 +96,7 @@ The dataset contained 90 counties, and there are 100 couties in North Carolina. 
 + 121 - Mitchell County
 + 177 - Tyrrell County
 + 199 - Yancey County
+-->
 
 These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
 
@@ -123,11 +108,10 @@ quick_uni_analysis = function(variable, description, roundto = 8) {
         paste('\n Shapiro:',
         round(as.numeric(shapiro.test(variable)[2]), roundto)
         )), main = "")
-  
-hist(log(variable), 
-     xlab = tools::toTitleCase(paste('Log of', description,
-            paste('\n Shapiro:', round(as.numeric(shapiro.test(log(variable))[2]), roundto)
-            ))),  main = "", ylab = '')
+  hist(log(variable), 
+       xlab = tools::toTitleCase(paste('Log of', description,
+              paste('\n Shapiro:', ... = round(as.numeric(shapiro.test(log(variable))[2]), roundto)
+              ))),  main = "", ylab = '')
 }
 
 ```
@@ -135,8 +119,6 @@ hist(log(variable),
   hist(variable, xlab = tools::toTitleCase(description), main = "")
   hist(log(variable), xlab = tools::toTitleCase(paste("Log of", description)), main = "", ylab = '')
 }  
-
-
 
 #  var_shpr <- shapiro.test(variable)[2]
 #  var_log_shpr <- shapiro.test(log(variable))[2]
@@ -165,16 +147,12 @@ Crimes committed per capita has a fairly strong positive skew, applying a natura
 par(mfrow=c(5,4))
 quick_uni_analysis(crime$prbarr, 'Probability of Arrest', roundto = 10)
 quick_uni_analysis(crime$prbconv, 'Probability of Conviction', roundto = 10)
-
 quick_uni_analysis(crime$prbpris, 'Probability of Prison')
 quick_uni_analysis(crime$avgsen, 'Average Sentence')
-
 quick_uni_analysis(crime$polpc, 'Police as Per. of Pop.', roundto = 15)
 quick_uni_analysis(crime$pctymle, 'Per. of Pop. That Are Young Males', roundto = 15)
-
 quick_uni_analysis(crime$density, 'people per sq. mile', roundto = 14)
 quick_uni_analysis(crime$taxpc, 'tax revenue per capita', roundto = 16)
-
 quick_uni_analysis(crime$mix, 'Face-to-face offences to other', roundto = 9)
 quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
 par(mfrow=c(1,1)) #Reset
@@ -481,7 +459,7 @@ plot(model3, which=5)
 ```
 There are some influential values [6,51,79] however cook's distance is within the bounds.
 
-####Calculating AIC
+#### Calculating AIC
 ```{r}
 AIC(model3)
 ```
@@ -596,7 +574,8 @@ Our ideal model of the causes of the crime rate would be something like:
 
 $$
 \begin{aligned}
-crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3poverty\_rate\ + \\ &\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}percent\_of\_population\_previously\_committed\_crime + \\
+crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3poverty\_rate\ + \\
+&\beta_4educ + \beta_5social\_cohesion + \beta_6weapon\_availability + \beta_7real\_wage\ + \\ &\beta_{8}low\_skill\_unemployment\_rate +\beta_{9}age\_15\_to\_30\_proportion\_population\ + \\ &\beta_{10}percent\_of\_population\_previously\_committed\_crime + \\
 &\beta_{11}percent\_of\_population\_previously_imprisoned + ... + error
 \end{aligned}
 $$
@@ -612,7 +591,6 @@ Similarly, our dataset contains a variable density which is likely correlated wi
 Our ability to interpret the variable polpc in our dataset is also compromised by omitted variable bias. While we understand the idea that increased police presence should increase the certainty of punishment (more likely to be detected and more likely to be caught) ceteris paribus, in our current dataset, we do not have the ability to use polpc in this way. We are unable to observe the counterfactual of the same location with the same characteristics at the same point in time having more or less police. Rather, the variable in our dataset is the current level of police as a percent of the population. Given that we expect local governments to respond to increased crime by highering more police, our model is more likely to reflect that higher crime rate locations also have higher police concentrations. Given an alternate work environment where we could retrieve more data, we might think about attempting to compensate for this by locating police concentration and crime rate statistics for previous years, then using them to create variables for the percentage point change in police concentration, which we could use to explain a newly created variable for the percentage point change in crime rate for a given location. However, in their current single point in time forms, our model is likely to estimate the relationship between police percentage and crime rate as positive, thus providing a misleadign estimate for the relationship we would actually like to observe. 
 
 Finally, our dataset contains several variables with nominal wages for certain industries. Including these in our model is likely to be somewhat misleading, producing biased estimators because these measures are not adjusted for cost of living. Said in other terms, each of the nominal wage indicators is likely positively correlated with our desired explanatory variable - real wages. Conceptually, we expect the relationship between real wages and crime rate to be negative, while the relationship between real wages and nominal wages is positive. As such our model's estimator for wages is likely to understate the impact of wages on crime rate. As such, these nominal wage variables are an imperfect proxy for the desired variable real wages
-
 
 # Conclusion
 
