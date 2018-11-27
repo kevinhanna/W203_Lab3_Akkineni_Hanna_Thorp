@@ -263,8 +263,7 @@ crime$log_pctymle <- log(crime$pctymle)
 
 ## Model1 - Minimum Specification
 
-Crime-Determinants: we anticipate that the crime rate depends on average sentencing as higher crime rate tends to have higher sentencing. And Increased avgsen suggests there are severe crimes happening in a given county.
-The two probability variables prbarr and prbconv will have strong correlations with prbpris and so we are including them as well in our model so that we can measure how much these variables influence crime rate.
+We anticipate that the crime rate depends on certainty of punishment and severity of punishment. As such, our base model includes variables that attempt to operationalize those concepts.The probability of arrest and probability of punishment operationalize certainty of punishment, while probability of prison and sentence length operationalize severity of punishment.
 
 $$
 \begin{aligned}
@@ -277,20 +276,15 @@ $$
 ```{r}
 model1 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+
               log(prbpris) +  log(avgsen), data = crime)
-```
-#### Checking if our Multiple Linear Regression Assumptions are valid in the model- 
-
+``` 
 #### Assumption - Linear model 
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model1, which=1, cex.sub=0.75)
 ```
-
-from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
-So, it is a VALID Assumption.
+From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
 
 #### Assumption - Random Sampling
-Since the dataset has counties information from only few regions it is not truly randomly sampled. But, we were provided with information that how the data is collected. Based on this 
-we think it is a VALID Assumption.
+We do not have enough information about the sample selection to investigate this claim. We know that our dataset includes 90 counties and that North Carolina has only 100 counties, so our sample is close to approximating the population. However, we do not know how the counties in our dataset were selected. This uncertainty leads us to be more cautious in interpreting results from our models.
 
 #### Assumption - Multicollinearity
 
@@ -302,24 +296,17 @@ cor_model1 = cor(cor_model1)
 diag(cor_model1) = 0 # Zero the diagonal as we are uninterested in those.
 max(cor_model1)
 ```
-
-We are not seeing any obvious signs of multicollinearity.
-Running some additional tests.
-
 ```{r}
 vif(model1)
 ```
-
-Computing VIF also indicates that there is no multicollinearity. 
-So, it is a VALID Assumption.
+Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 #### Assumption - 4 Exogeneity (Zero Conditional Mean)
-From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. 
-It is a Most-Likely valid Assumption.
+From the residuals vs fitted plot, the red line is very influenced by the outliers on the ends, though it remains largely centered on zero, so we treat this as most-likely a valid assumption.
 
 #### Additional Assumptions 
 #### Homoscedasticity
-From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
+From the same residuals vs fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 
 ```{r}
 bptest(model1)
@@ -329,8 +316,7 @@ bptest(model1)
 ncvTest(model1)
 ```
 
-Both tests are showing small p-values showing that we have to reject the hypothesis. 
-So Homoscedasticity is not a valid assumption here indicating that our explanatory variables may not be not able to explain crime rate highly significant. 
+Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. We will need to return to this in future analyses to examine our ability to use robust standard errors or other compensating techniques in order to make inference from our models. 
 
 #### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
@@ -338,9 +324,7 @@ plot(model1, which=2)
 hist(model1$residuals,main="Model1 Residuals")
 
 ```
-
-Other than a few outliers, the distribution is relatively normal for our given sample size. 
-So, it is a VALID assumption.
+Other than a few outliers, the distribution is relatively normal for our given sample size. We treat this as a valid assumption.
 
 #### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
@@ -349,24 +333,16 @@ plot(model1, which=5)
 
 ```
 There are some influential values however cook's distance is within the bounds. 
-If we remove the outliers, we can see a very improved R-Square.
 
 #### Calculating AIC
 ```{r}
 AIC(model1)
 ```
-The AIC for this model is 110.0643
+The AIC for this model is 110.0643.
 
 ## Model2 - Optimal Specification
 
-In additional to the explanatory variables intorudced in our #Model1, we have decided to include the following variables in the model.
-
-Demographics - The team anticipates that crime behavior alters with demographics information such as race, gender, age. So, we are including pctymle and pctmin80 variables in our  model.
-
-Density - The team is intereseted to see how density is altering crime  rates. The team expects that this should have a negative effect on crime.
-
-Income Variables - The team expects that higher tax money means less crimes. Similar crimes would be less with better policing. So, we are inclduing polpc and taxpc variables in our model.
-
+In additional to the explanatory variables introduced in our #Model1, we have decided to include the following variables in the model.
 
 $$
 \begin{aligned}
@@ -385,12 +361,10 @@ model2 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +  log(avgsen
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model2, which=1, cex.sub=0.75)
 ```
-
-from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
-So, it is a VALID Assumption.
+From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
 
 #### Assumption - Random Sampling
-As we are using the same data set - From Model1, it is a VALID Assumption.
+Our views are identical to the previous specification.
 
 #### Assumption - Multicollinearity
 
@@ -403,51 +377,38 @@ cor_model2 = cor(cor_model2)
 diag(cor_model2) = 0 # Zero the diagonal as we are uninterested in those.
 max(cor_model2)
 ```
-
-We are not seeing any obvious signs of multicollinearity. 
-Runnig some additional tests
-
 ```{r}
 vif(model2)
 ```
-
-Computing VIF also indicates that there is no multicollinearity. 
-So, it is a VALID Assumption.
+Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 #### Assumption - Exogeneity (Zero Conditional Mean)
-From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
-It is a Most-Likely valid Assumption.
+From the residuals vs fitted plot, the red line is influenced by outliers on either end, however the zero conditional mean appears to hold.
 
 #### Additional Assumptions - Homoscedasticity
-From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
+From the same residuals Vs fitted plot, we see that it is scattered with extreme outliers. It is not easy to determine homoscedasticity from this plot only. 
 Running some additional tests
 ```{r}
 bptest(model2)
 ```
-
 ```{r}
 ncvTest(model2)
 ```
-
-Both tests are showing small p-values showing that we fail to reject the hypothesis. 
-So Homoscedasticity is a valid assumption here. 
+Both tests are showing large p-values showing that we fail to reject the null hypothesis. 
 
 ####Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=2)
 hist(model2$residuals,main="Model2 Residuals")
 ```
-
-Other than a few outliers, the distribution is relatively normal for our given sample size. 
-So, it is a VALID assumption.
+Other than a few outliers, the distribution is relatively normal for our given sample size, so we treat it as a valid assumption.
 
 ####Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=4)
 plot(model2, which=5)
-
 ```
-There are some influential values [24,51,79] however cook's distance is within the bounds
+There are some influential values [24,51,79] however cook's distance is within bounds.
 
 ```{r}
 AIC(model2)
@@ -456,7 +417,7 @@ The AIC for this model is 30.5825
 
 ## Model3 - Optimal-2 Specification [Best-Fit model]
 
-After obsercing Model2 - We found that tax and percent male doesn't influence crime extensively. So, removing those in our Best-Fit model
+After observing Model2 - We found that tax and percent male doesn't influence crime extensively, so we remove those in our best-fit model
 
 $$
 \begin{aligned}
@@ -473,15 +434,12 @@ model3 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(polpc) +
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model3, which=1, cex.sub=0.75)
 ```
-
-from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
-So, it is a VALID Assumption.
+From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
 
 #### Assumption - Random Sampling
-As we are using the same data set - From Model1, it is a VALID Assumption.
+Our views are identical to the previous model.
 
 #### Assumption - Multicollinearity
-
 ```{r}
 # Find the maximum Correlation
 cor_model3 <- data.matrix(subset(crime,
@@ -491,50 +449,38 @@ cor_model3 = cor(cor_model3)
 diag(cor_model3) = 0 # Zero the diagonal as we are uninterested in those.
 max(cor_model3)
 ```
-
-We are not seeing any obvious signs of multicollinearity. 
-Running some additional tests
 ```{r}
 vif(model3)
 ```
-
-Computing VIF also indicates that there is no multicollinearity. 
-So, it is a VALID Assumption.
+Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 #### Assumption - Exogeneity (Zero Conditional Mean)
-From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
-It is a Most-Likely valid Assumption.
+From the residuals vs fitted plot, the red line is very influenced by the outlierson either end, however the zero conditional mean appears to hold.
 
 #### Additional Assumptions - Homoscedasticity
-From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
-Running some additional tests
+From the same residuals vs fitted plot, we see it is scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 ```{r}
 bptest(model3)
 ```
-
 ```{r}
 ncvTest(model3)
 ```
-
-Both tests are showing small p-values showing that we fail to reject the null hypothesis. 
-So Homoscedasticity is a VALID assumption here. 
+Both tests are showing insignificant p-values showing that we fail to reject the null hypothesis of homoskedasticity. 
 
 #### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model3, which=2)
 hist(model3$residuals,main="Model3 Residuals")
 ```
-Other than a few outliers, the distribution is relatively normal for our given sample size. 
-So, it is a VALID assumption.
+Other than a few outliers, the distribution is relatively normal for our given sample size, so we treat this as a valid assumption.
 
 #### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model3, which=4)
 plot(model3, which=5)
-
 ```
-There are some influential values [6,51,79] however cook's distance is within the bounds
-If we remove the outliers, we see a better and improved R-Square value
+There are some influential values [6,51,79] however cook's distance is within the bounds.
+
 ####Calculating AIC
 ```{r}
 AIC(model3)
@@ -543,7 +489,7 @@ The AIC for this model is 26.9529
 
 ## Model4 - Using all variables Specification
 
-The team wanted to check the robustness of all variables in the model except county name, year
+The team wanted to check the robustness of prior model specifications by creating a model with maximal inclusion from our dataset to see if estimated relationships shift.
 $$
 \begin{aligned}
 log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\ 
@@ -563,65 +509,49 @@ model4 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +
 ```
 #### Checking if our Assumptions are valid in the model- 
 #### Assumption - Linear model 
-The specified model has the dependent variable linear with explanatory variables 
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model4, which=1, cex.sub=0.75)
 ```
-
-from the Residuals vs Fitted plot, we don't see any non-linear relatonship.
-So, it is a VALID Assumption.
-
 #### Assumption - Random Sampling
-As we are using the same data set - From Model1, it is a VALID Assumption.
+Our views are identical to the previous model.
 
 #### Assumption - Multicollinearity
-Running tests for Multicollinearity
 ```{r}
 vif(model4)
 ```
-
 Computing VIF indicates that there is no multicollinearity. 
-So, it is a VALID Assumption.
 
 #### Assumption - Exogeneity (Zero Conditional Mean)
-From the Residuals Vs Fitted Plot, the red line is very influenced by the outliers on the ends. But it is close to x-axis.
-It is a Most-Likely valid Assumption.
+From the residuals vs fitted plot, the red line is very influenced by the outliers on either end, but the zero conditional mean appears to hold.
 
 #### Additional Assumptions - Homoscedasticity
-From the same Residuals Vs Fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
-Running some additional tests
+From the same residuals Vs fitted plot, we see it is scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
 ```{r}
 bptest(model4)
 ```
-
 ```{r}
 ncvTest(model4)
 ```
-
-Both tests are showing small p-values showing that we fail to accept the hypothesis. 
-So Homoscedasticity is a most likely valid assumption here. 
+Both tests are showing large p-values showing that we fail to accept the null hypothesis. 
 
 #### Normality of Residuals
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=2)
 hist(model4$residuals,main="Model4 Residuals")
 ```
-
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
-So, it is a VALID assumption.
+
 #### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model4, which=4)
 plot(model4, which=5)
-
 ```
-There are some influential values [25,79,84] however cook's distance is within the bounds
+There are some influential values [25,79,84] however cook's distance is within bounds.
 #### Calculating AIC
 ```{r}
 AIC(model4)
 ```
 The AIC for this model is 31.94569
-
 
 ```{r, results='asis'}
 stargazer(model1, model2,model3, model4, type = "latex",
@@ -635,28 +565,23 @@ stargazer(model1, model2,model3, model4, type = "latex",
 ```
 #### Model1 -
 Only 41.6% of crime rate is being explained by our model. 
-prbarr, prbconv has negative effect on crime. 
-While other independent variables prbpris and avgsen  has postive effect on crime.
-From the P-Values, crime rate fluctuates more with prbarr, prbconv
+prbarr, prbconv are shown to have a negative effect on crime, while the other independent variables prbpris and avgsen have a postive effect on crime.
 
-This says that crime rate will decrease if people are arrested and convicted.
+We do not want to overinterpret the model as assumptions of homoskedasticity appear to be violated. If we accept the model at face value, we would see that the estimators for the probability of arrest and probability of conviction are statistically significantly different from zero. 
 
 #### Model 2 - 
 78.4% of crime rate is being explained by this model. 
-Polpc, Density and Pctmin80 has a positive effect on crime. 
-While other independent variables prbarr,prbconv,prbpris,avgsen,taxpc,pctymle has negative effect on crime.
-From the P-Values, crime rate fluctuates more with prbarr, prbconv, density, pctmin80 and polpc
-and has some impact with prbpris and avgsen
+Polpc, Density and Pctmin80 appear to have a positive effect on crime. 
+While other independent variables are estimated as having a negative effect on crime.
 
 #### Model 3 -
 78.3% of crime rate is being explained by this model. 
 
-This says that crimerate decreases if more people are arrested, convicted, sentenced in prison 
-With better policing in place more crimes would  be identified. And as density increases crimerates tend to go up. Also, Minority has a positive impact on  crime. 
+This says that crime rate decreases if more people are arrested, convicted, sentenced in prison 
 
 #### Model 4 -
 83.5% of crime rate is being explained by this model
-Using All variables, we got a better AIC compared to Model 1 and very close to Model 2- But it is not a best fit model
+Using all variables, we got a better AIC compared to Model 1 and very close to Model 2- but it is not a best fit model
 
 #### Best-Fit Model
 Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.9529. 
