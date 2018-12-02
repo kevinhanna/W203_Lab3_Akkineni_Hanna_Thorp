@@ -1,0 +1,14 @@
+---
+title: 'Lab 3: Reducing Crime (Stage 2: Feedback)'
+author: "N. Akkineni, K. Hanna, A. Thorp"
+date: "December 4, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Feedback on Lab 3: Alvarez, Jha, Khan and Yi
+
+
