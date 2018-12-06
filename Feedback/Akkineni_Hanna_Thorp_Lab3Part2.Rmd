@@ -11,4 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Feedback on Lab 3: Alvarez, Jha, Khan and Yi
 
+Didn't mention that there was no "East"
+
+Didn't validate assumptions
+
+Justify removing outlier
+
+Address impact of bias on inference 
+
+Urban and density are redundant. 
+
 

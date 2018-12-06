@@ -2,14 +2,25 @@
 title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
 author: "N. Akkineni, K. Hanna, A. Thorp"
 date: "November 27, 2018"
-geometry: margin=2.2cm
 output:
-    pdf_document
+    pdf_document:
+    toc: true
+    toc_depth: 1
+    fig_height: 3
+    df_print: kable
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+\tableofcontents 
+ <!--
+\listoffigures
+\listoftables
+-->
+
 # Introduction (Stage 1: Draft Report)
 
 Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
@@ -29,14 +40,14 @@ crime$year <- as.factor(crime$year)
 crime$west <- as.logical(crime$west)
 crime$central <- as.logical(crime$central)
 crime$urban <- as.logical(crime$urban)
-```
-<!--
+
 codebook <- read.csv('codebook.csv')
 
 # Create a log of the dependent variable
-crime$logcrmrte <- log(crime$crmrte)
 crime$east <- !(crime$west | crime$central)
 
+```
+<!--
 # Create an average of all weekly wages values. 
 crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir + 
                    crime$wser + crime$wmfg + crime$wfed + crime$wsta + crime$wloc)/9
