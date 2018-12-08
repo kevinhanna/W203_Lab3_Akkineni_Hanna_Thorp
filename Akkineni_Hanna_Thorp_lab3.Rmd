@@ -31,6 +31,8 @@ library(kableExtra)
 suppressMessages(library(car))
 suppressMessages(library(stargazer))
 suppressMessages(library(lmtest))
+library(corrplot)
+
 
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
@@ -45,6 +47,19 @@ codebook <- read.csv('codebook.csv')
 
 # Create a log of the dependent variable
 crime$east <- !(crime$west | crime$central)
+
+crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
+                   crime$wser + crime$wmfg + crime$wfed + crime$wsta +
+                   crime$wloc)/9
+
+
+
+# Used for displaying subsets of variables. 
+columns_prety_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
+                       "prbpris", "avgsen", "mix",  "polpc", "density", 
+                       "taxpc", "east", "central", "west", "urban", 
+                       "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
+                       "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
 
 ```
 <!--
@@ -66,6 +81,11 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
 Some of the values in this dataset were calculated from other datasets and we found some characteristics in the dataset which may bring its veracity in to question and we have addressed those below and in our analyses. 
+
+```{r echo = FALSE, results = 'asis'}
+kable(codebook[, c(2,3)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
+  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
+```
 
 ### Data Clean Up
 
@@ -114,19 +134,6 @@ These missing counties will introduce a slight clustering bias into our analyses
 
 ## Univariate Analysis
 
-```{r}
-quick_uni_analysis = function(variable, description, roundto = 8) {
-  hist(variable, xlab = paste(tools::toTitleCase(description),
-        paste('\n Shapiro:',
-        round(as.numeric(shapiro.test(variable)[2]), roundto)
-        )), main = "")
-  hist(log(variable), 
-       xlab = tools::toTitleCase(paste('Log of', description,
-              paste('\n Shapiro:', ... = round(as.numeric(shapiro.test(log(variable))[2]), roundto)
-              ))),  main = "", ylab = '')
-}
-
-```
 <!-- quick_uni_analysis_new = function(variable, description, roundto = 8) {
   hist(variable, xlab = tools::toTitleCase(description), main = "")
   hist(log(variable), xlab = tools::toTitleCase(paste("Log of", description)), main = "", ylab = '')
@@ -141,7 +148,31 @@ quick_uni_analysis = function(variable, description, roundto = 8) {
   #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
   #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
+```{r}
+hist(log(crime$crmrte))
+
+hist(log(crime$density), breaks = 20)
+hist(crime$density)
+hist(log(crime$pctmin80))
+hist(poly(log(crime$pctmin80),2))
+hist(log(crime$pctymle)^2)
+hist(poly(log(crime$taxpc), 4))
+```
+
 ### Key Variable
+```{r}
+quick_uni_analysis = function(variable, description, roundto = 8) {
+  hist(variable, xlab = paste(tools::toTitleCase(description),
+        paste('\n Shapiro:',
+        round(as.numeric(shapiro.test(variable)[2]), roundto)
+        )), main = "")
+  hist(log(variable), 
+       xlab = tools::toTitleCase(paste('Log of', description,
+              paste('\n Shapiro:', ... = round(as.numeric(shapiro.test(log(variable))[2]), roundto)
+              ))),  main = "", ylab = '')
+}
+
+```
 
 #### Crimes Committed Per Person
 
@@ -151,6 +182,14 @@ par(mfrow=c(1,2))
 quick_uni_analysis(crime$crmrte, 'crimes committed per person')
 ```
 Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject. The transformed variable is preferable for modelling. 
+
+```{r}
+crmrte.outliers = boxplot(crime$crmrte, plot = FALSE)$out
+length(crmrte.outliers)
+```
+
+Crime rate has 5 outliers, none that are extreme or causing concern.
+
 
 ### Explanatory Variables
 
@@ -211,13 +250,17 @@ Both logged and un-logged versions of the percent of population that is young an
 
 This variable has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
 
-<!--
+
 #### People per Square Mile
 
- ------------------ ** Naga and Alex ** ------------------   
+There is one fairly extreme outlier for county 173, with 0.000023 people per square mile.  This will affect our modeling, specifically the cooks distance.  Without that outlier, this variable is more normal with a log transformation.
 
-This variable becomes less normal after log transformation, as skew shifts to the negative and becomes more extreme.  We elect to keep the untransformed variable for our regressions. 
--->
+```{r}
+par(mfrow=c(1,2))
+hist(crime[-c(79), ]$density, main = "Density with outlier removed")
+hist(log(crime[-c(79), ]$density), main = "Log density\n with outlier removed")
+```
+
 
 #### Tax Revenue per Capita
 
@@ -235,6 +278,29 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 
 ** Same issue as density **
 -->
+## Relationships
+
+### Correlation Matrix
+```{r}
+corrmatrix <- cor(crime[,columns_prety_sort[3:26]])
+corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
+```
+
+Using the correlation matrtix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Densisty (density), Crime Rate and Urban, East and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposit correlations in those last two. We also see stong corelation with Populations Dessity and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
+
+```{r}
+barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
+       names.arg = c("East", "Central", "West"), main = "County locations")
+
+crime$region <- ifelse(crime$west == 1, "west",
+                      ifelse(crime$central == 1, "central",
+                              ifelse(crime$east == 1, "east",        "other")))
+aggregate(density ~ region, data = crime, mean)
+aggregate(polpc ~ region, data = crime, mean)
+aggregate(crmrte ~ region, data = crime, mean)
+```
+
+
 # Model Analysis
 Transforming the variables and storing them in the data frame
 
@@ -611,12 +677,13 @@ We examined several models of crime rate and found a directionally consistent, s
 
 That said, our ability to draw policy prescriptions from our models is limited due to notable omitted variable bias, which leads our model's estimators to be biased. These omitted variable biases are not possible to overcome while limited to the current data collection process. Should more work requiring causal inference be desired on these relationships in the future, we would seek input into the data collecting process in order to correct for some of our omitted variable biases. 
 
-<!--
+
 \newpage
+
 # Appendix A: Codebook
 
 ```{r echo = FALSE, results = 'asis'}
 #kable(codebook[, c(2,3,4)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
 #  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
 ```
--->
+
