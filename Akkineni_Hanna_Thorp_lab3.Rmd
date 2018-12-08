@@ -73,7 +73,7 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 -->
 # Exploratory Data Analysis
 
-# Data Summary
+## Data Summary
 
 We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
@@ -659,14 +659,3 @@ Finally, our dataset contains several variables with nominal wages for certain i
 We examined several models of crime rate and found a directionally consistent, statistically significant negative relationship for the probability of arrest and the probability of conviction on crime rate. As such, policies adopted should focus on increasing the certainty of punishment for committing crimes. One such policy could focus on improving information flow from local communities to police and judicial officials. A good model to build off of is community policing, where police focus on developing ties to the local community to build trust and thereby promote flow of needed information. 
 
 That said, our ability to draw policy prescriptions from our models is limited due to notable omitted variable bias, which leads our model's estimators to be biased. These omitted variable biases are not possible to overcome while limited to the current data collection process. Should more work requiring causal inference be desired on these relationships in the future, we would seek input into the data collecting process in order to correct for some of our omitted variable biases. 
-
-
-\newpage
-
-# Appendix A: Codebook
-
-```{r echo = FALSE, results = 'asis'}
-#kable(codebook[, c(2,3,4)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
-#  kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
-```
-
