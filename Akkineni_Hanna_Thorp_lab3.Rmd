@@ -106,7 +106,7 @@ crime = crime[!duplicated(crime), ]
 ### Concerns about the data
 
 #### prbarr (Probability of Arrest)
-We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
+We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to either be a labeling error, as it is a ratio used to approximate a probability, or erroneous, as we'll explain later, there are several concerning factors about the observations for county 115. 
 
 #### prbconv (Probability of Conviction)
 We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  The documentation in the codebook specifies that "(t)he probability of conviction is proxied by the ratio of convictions to arrests", which leaves some ambiguity, however it is plausible to have values greater than 1 as a single arrest can result in multiple convictions and persons can be convicted in absentia. Similar to the prbarr, we beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
@@ -117,36 +117,21 @@ The dataset contained 90 counties, and there are 100 couties in North Carolina. 
 
 These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
 
-### Mislabeled Region
+#### Mislabeled Region County 71
 
-County 87 is both part of the West region and Central region.  It's possible to straddle the border however, we'd expect more instances if it was done in this manner, thus we expect his is mislabled and should belong in only one region.  This is the only case where this occurs. 
+County 71 is both part of the West region and Central region.  It's possible to straddle the border however, we'd expect more instances if it was done in this manner, thus we expect one of these to be erroneous and should belong in only one region.  This is the only case where this occurs. 
+
+#### Suspicious values for county 115
+
+There are several causes for concern for county 115.  First the percentage of police per person is 0.009, the highest value in the dataset and twice that of the second highest value for that variable.  It also has the lowest crime rate in the dataset, a variable we show later is actually positively correlated with police per person.  The probability of arrest is greater than 1 as we mentioned above, the only variable in the dataset greater than 1.  Lastly, the values for probability of conviction, probability of prison and crime mix are in the tenths, 1.5, 0.5 and 0.1 respectively.  Typical values for these variables are 6, 7 and 8 decimal places, making 3 round values highly improbable.
+
+A small number of these issues is cause for concern.  This many issues suggests the observations for county 115 are erroneous.
+
+#### Extreme Outlier County 185 Service Industry Wage 
+
+The value for the mean weekly wage for the service industry is 2177, nearly 8 times greater than the mean, and 5.5 times greater than the second highest value for that variable.  It is likely erroneous.  
 
 ## Univariate Analysis
-
-<!-- quick_uni_analysis_new = function(variable, description, roundto = 8) {
-  hist(variable, xlab = tools::toTitleCase(description), main = "")
-  hist(log(variable), xlab = tools::toTitleCase(paste("Log of", description)), main = "", ylab = '')
-}  
-
-#  var_shpr <- shapiro.test(variable)[2]
-#  var_log_shpr <- shapiro.test(log(variable))[2]
-#  table_out <- data.frame(shptst = var_shpr, shplogtst = var_log_shpr)
-#  colnames(table_out) <- c('Shapiro test', 'Shapiro test log')
-
-#  kable(table_out)
-  #kable(table_out, "latex", longtable = TRUE, booktabs = TRUE, caption = "") %>%
-  #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
-
-```{r}
-#hist(log(crime$crmrte))
-
-#hist(log(crime$density), breaks = 20)
-#hist(crime$density)
-#hist(log(crime$pctmin80))
-#hist(poly(log(crime$pctmin80),2))
-#hist(log(crime$pctymle)^2)
-#hist(poly(log(crime$taxpc), 4))
-```
 
 ### Key Variable
 ```{r}
@@ -233,7 +218,9 @@ The number of police can conceivably be either the cause of or result of crime r
 http://www.princeton.edu/~smello/papers/cops.pdf 
 -->
 
-Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. $^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 
+Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
+
+<!--$^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 -->
 
 #### Percentage of Population That Are Young Males
 
@@ -242,14 +229,7 @@ This variable has a strong positive skew, using a natural log transformation res
 
 #### People per Square Mile
 
-There is one fairly extreme outlier for county 173, with 0.000023 people per square mile.  This will affect our modeling, specifically the cooks distance.  Without that outlier, this variable is more normal with a log transformation.
-
-```{r}
-par(mfrow=c(1,2))
-hist(crime[-c(79), ]$density, main = "Density with outlier removed")
-hist(log(crime[-c(79), ]$density), main = "Log density\n with outlier removed")
-```
-
+There is one extreme outlier for county 173, with 0.000023 people per square mile.  This will affect our modeling, specifically the cooks distance.  Without that outlier, this variable is more normal with a log transformation.
 
 #### Tax Revenue per Capita
 
@@ -262,11 +242,11 @@ This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes
 **Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
 
 The mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution. However, the resulting Shapiro-Wilk test would still reject the null hypothesis of normality.  That said, the log transformation is preferable for modelling.
-<!--
+
 #### Percentage Minority, 1980
 
-** Same issue as density **
--->
+
+
 ## Relationships
 
 ### Correlation Matrix
@@ -275,26 +255,34 @@ corrmatrix <- cor(crime[,columns_pretty_sort[3:26]])
 corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 ```
 
-Using the correlation matrtix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Densisty (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposit correlations in those last two. We also see stong corelation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
+Using the correlation matrix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Density (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposite correlations in those last two. We also see strong correlation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
 
 ```{r}
-barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
+barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
        names.arg = c("East", "Central", "West"), main = "County locations")
 
-crime$region <- ifelse(crime$west == 1, "west",
-                      ifelse(crime$central == 1, "central",
-                              ifelse(crime$east == 1, "east",        "other")))
+crime$region <- ifelse(crime$west == 1, "West",
+                      ifelse(crime$central == 1, "Central",
+                              ifelse(crime$other == 1, "East",        "other")))
+
 region = aggregate(density ~ region, data = crime, mean)
 region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
 region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
 colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
 
-#region
-kable(region)
-#kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") #%>%
-#    kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
+kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") %>%
+    kable_styling(full_width = TRUE, latex_options = 
+                    c("HOLD_position", "striped", "repeat_header"),
+                  row_label_position = 1)  
 ```
 
+There are three regions, two provided in the data set; West and Central, and those not in those two regions which we have determined to be East. 
+
+West shows a higher mean police per capita and a lower crime rate, which is likely more related to the
+
+```{r}
+region_model = lm(log(crmrte) ~ polpc, data = crime[crime$west, ])
+```
 
 # Model Analysis
 Transforming the variables and storing them in the data frame
