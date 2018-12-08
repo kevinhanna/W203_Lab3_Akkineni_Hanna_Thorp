@@ -37,27 +37,24 @@ library(corrplot)
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
 # Convert columns to factors and logical.
-crime$county <- as.factor(crime$county)
-crime$year <- as.factor(crime$year)
 crime$west <- as.logical(crime$west)
 crime$central <- as.logical(crime$central)
 crime$urban <- as.logical(crime$urban)
 
 codebook <- read.csv('codebook.csv')
 
-# Create a log of the dependent variable
-crime$east <- !(crime$west | crime$central)
+# Create a variable for counties not in west or central.
+crime$other <- !(crime$west | crime$central)
 
+# Average of all weekly wage variables. 
 crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
                    crime$wser + crime$wmfg + crime$wfed + crime$wsta +
                    crime$wloc)/9
 
-
-
 # Used for displaying subsets of variables. 
-columns_prety_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
+columns_pretty_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
                        "prbpris", "avgsen", "mix",  "polpc", "density", 
-                       "taxpc", "east", "central", "west", "urban", 
+                       "taxpc", "other", "central", "west", "urban", 
                        "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
                        "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
 
@@ -117,20 +114,12 @@ We found 10 observations with values greater than 1, which, again, is not a poss
 #### Omitted Counties Creating Bias
 
 The dataset contained 90 counties, and there are 100 couties in North Carolina.  The observation id labeled 'county' in our data set appears to contain FIPS codes, if this assumption is correct the following are the missing counties: Camden County, Carteret County, Clay County, Gates County, Graham County, Iredell County, Jones County, Mitchell County, Tyrrell County and Yancey County
-<!--
-+ 29 - Camden County 
-+ 31 - Carteret County 
-+ 43 - Clay County 
-+ 73 - Gates County 
-+ 75 - Graham County 
-+ 97 - Iredell County 
-+ 103 - Jones County
-+ 121 - Mitchell County
-+ 177 - Tyrrell County
-+ 199 - Yancey County
--->
 
 These missing counties will introduce a slight clustering bias into our analyses at a minimum, and possibly a more significant bias if they were ommitted based on specific criteria whether deliberate or not.
+
+### Mislabeled Region
+
+County 87 is both part of the West region and Central region.  It's possible to straddle the border however, we'd expect more instances if it was done in this manner, thus we expect his is mislabled and should belong in only one region.  This is the only case where this occurs. 
 
 ## Univariate Analysis
 
@@ -149,14 +138,14 @@ These missing counties will introduce a slight clustering bias into our analyses
   #kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1) -->
 
 ```{r}
-hist(log(crime$crmrte))
+#hist(log(crime$crmrte))
 
-hist(log(crime$density), breaks = 20)
-hist(crime$density)
-hist(log(crime$pctmin80))
-hist(poly(log(crime$pctmin80),2))
-hist(log(crime$pctymle)^2)
-hist(poly(log(crime$taxpc), 4))
+#hist(log(crime$density), breaks = 20)
+#hist(crime$density)
+#hist(log(crime$pctmin80))
+#hist(poly(log(crime$pctmin80),2))
+#hist(log(crime$pctymle)^2)
+#hist(poly(log(crime$taxpc), 4))
 ```
 
 ### Key Variable
@@ -282,11 +271,11 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 
 ### Correlation Matrix
 ```{r}
-corrmatrix <- cor(crime[,columns_prety_sort[3:26]])
+corrmatrix <- cor(crime[,columns_pretty_sort[3:26]])
 corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 ```
 
-Using the correlation matrtix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Densisty (density), Crime Rate and Urban, East and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposit correlations in those last two. We also see stong corelation with Populations Dessity and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
+Using the correlation matrtix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Densisty (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposit correlations in those last two. We also see stong corelation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
 
 ```{r}
 barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
@@ -295,9 +284,15 @@ barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
 crime$region <- ifelse(crime$west == 1, "west",
                       ifelse(crime$central == 1, "central",
                               ifelse(crime$east == 1, "east",        "other")))
-aggregate(density ~ region, data = crime, mean)
-aggregate(polpc ~ region, data = crime, mean)
-aggregate(crmrte ~ region, data = crime, mean)
+region = aggregate(density ~ region, data = crime, mean)
+region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
+region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
+colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
+
+#region
+kable(region)
+#kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") #%>%
+#    kable_styling(full_width = TRUE, latex_options = c("HOLD_position", "striped", "repeat_header"), row_label_position = 1)  
 ```
 
 
