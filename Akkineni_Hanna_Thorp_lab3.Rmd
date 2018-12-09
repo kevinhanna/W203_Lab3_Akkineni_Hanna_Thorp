@@ -36,27 +36,7 @@ library(sandwich)
 
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
-# Convert columns to factors and logical.
-crime$west <- as.logical(crime$west)
-crime$central <- as.logical(crime$central)
-crime$urban <- as.logical(crime$urban)
-
 codebook <- read.csv('codebook.csv')
-
-# Create a variable for counties not in west or central.
-crime$other <- !(crime$west | crime$central)
-
-# Average of all weekly wage variables. 
-crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
-                   crime$wser + crime$wmfg + crime$wfed + crime$wsta +
-                   crime$wloc)/9
-
-# Used for displaying subsets of variables. 
-columns_pretty_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
-                       "prbpris", "avgsen", "mix",  "polpc", "density", 
-                       "taxpc", "other", "central", "west", "urban", 
-                       "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
-                       "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
 
 ```
 <!--
@@ -86,21 +66,49 @@ kable(codebook[, c(2,3)], "latex", longtable = TRUE, booktabs = TRUE, caption = 
 
 ### Data Clean Up
 
-#### Null Rows
+#### Removing Null Rows
 The dataset contained an apostrophe 6 rows after the data which caused the csv reader to create 6 invalid rows.  We removed these rows as they contain no data. 
+
 ```{r}
 # Delete the 6 empty observations at the end, including the row with the apostrophe.
 crime <- crime[!is.na(crime$county) & !is.na(crime$crmrte), ]
+```
 
+#### Removing Duplicate County
+We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional dataset, so we feel removing one of these two observations can only improve the quality of our analysis. 
+```{r}
+# county 193 is duplicated, remove one
+crime = crime[!duplicated(crime), ]
+```
+
+#### Convert prbconv to numeric
+
+```{r}
 # Convert prbconv to numeric
 crime$prbconv = as.numeric(as.character(crime$prbconv))
 ```
 
-We found two identical observations for county 193.  There is no logical reason to have two identical observations in this cross-sectional dataset, so we feel removing one of these two observations can only improve the quality of our analysis. 
-
+#### Convert columns to factors and logical.
 ```{r}
-# county 193 is duplicated, remove one
-crime = crime[!duplicated(crime), ]
+
+crime$west <- as.logical(crime$west)
+crime$central <- as.logical(crime$central)
+crime$urban <- as.logical(crime$urban)
+
+# Create a variable for counties not in west or central.
+crime$other <- !(crime$west | crime$central)
+
+# Average of all weekly wage variables. 
+crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
+                   crime$wser + crime$wmfg + crime$wfed + crime$wsta +
+                   crime$wloc)/9
+
+# Used for displaying subsets of variables. 
+columns_pretty_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
+                       "prbpris", "avgsen", "mix",  "polpc", "density", 
+                       "taxpc", "other", "central", "west", "urban", 
+                       "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
+                       "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
 ```
 
 ### Concerns about the data
