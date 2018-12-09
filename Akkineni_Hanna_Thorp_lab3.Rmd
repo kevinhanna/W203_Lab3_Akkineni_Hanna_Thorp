@@ -21,8 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 \listoftables
 -->
 
-# Introduction (Stage 1: Draft Report)
-
+# Introduction 
 Our team has been hired to provide research for a local political campaign, which would like to understand the determinants of crime rates and to provide policy suggestions that are applicable to local government. We examine the provided dataset to determine if a model with causal interpretation is feasible. After examining the data, we detail four regression models and find that estimators related to variables used to operationalize the concept of certainty of punishment are directionally consistent and statistically siginificant. From this we draw a limited policy recommendation to adopt a model of community policing to improve trust and information flow to law enforcement. However, our policy recommendations are limited because omitted variable bias confounds our estimators. Should local officials desire more robust conclusions, we recommend involving data scientists in the data collection process to improve our ability to draw causal inference from our modeling process and thus be able to make robust policy recommendations. 
 
 ```{r, result='asis'}
@@ -31,7 +30,7 @@ library(kableExtra)
 suppressMessages(library(car))
 suppressMessages(library(stargazer))
 suppressMessages(library(lmtest))
-library(corrplot)
+suppressMessages(library(corrplot))
 library(sandwich)
 
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
@@ -148,7 +147,8 @@ quick_uni_analysis = function(variable, description, roundto = 8) {
         )), main = "")
   hist(log(variable), 
        xlab = tools::toTitleCase(paste('Log of', description,
-              paste('\n Shapiro:', ... = round(as.numeric(shapiro.test(log(variable))[2]), roundto)
+              paste('\n Shapiro:', ... = 
+                      round(as.numeric(shapiro.test(log(variable))[2]), roundto)
               ))),  main = "", ylab = '')
 }
 
@@ -287,22 +287,11 @@ f <- summary(crmrate_wage_model )$fstatistic
 As all coefficients are close to 0 -> we can say none of the wage variables are independently significant. But, the F-stat p-value $`r pf(f[1],f[2],f[3],lower.tail=F)`$ shows that all the  wage variables are jointly significant. wcon and wfed are somewhat important.
 
 # Model Analysis
-## Identifying the key variables and applying necessary transformations and storing them in the data frame
-
-
-```{r}
-crime$log_crmrte <- log(crime$crmrte)
-crime$log_polpc <- log(crime$polpc)
-crime$log_density <- log(crime$density)
-crime$log_taxpc <- log(crime$taxpc)
-crime$log_mix <- log(crime$mix)
-crime$log_pctymle <- log(crime$pctymle)
-```
 
 ## Model1 - Minimum Specification
 
 Variables of Interest -> prbconv, prbarr, density, polpc.
-Based on the table above, we We anticipate that the crime rate depends on certainty of punishment and severity of punishment. Also, we anticipate that police per capita and density has an impact on the crime rate. As such, our base model includes variables that attempt to operationalize those concepts
+Based on the table above, We anticipate that the crime rate depends on certainty of punishment and severity of punishment along with police per capita and density. As such, our base model includes variables that attempt to operationalize those concepts
 
 $$
 \begin{aligned}
@@ -318,7 +307,7 @@ model1 = lm(log_crmrte ~ (prbarr) + (prbconv)+
 (model1$coefficients)
 ``` 
 
-### Checking if county 71 that has both west=central=1 has any impact on our model. 
+#### Checking if county 71 that has both west=central=1 has any impact on our model. 
 ```{r}
 model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 71,])
@@ -326,13 +315,13 @@ model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
 ```
 We don't observe any major changes to our coefficients here, it could be because we didn't add any region variable in our model.
 
-### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+#### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
 ```{r}
 model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 115,])
 (model1.b$coefficients)
 ```
-From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This will vary our CLM assumptions.
+From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This county can impact our CLM assumptions.
 
 ### Testing the validity of the 6 assumptions of the CLM
 #### CLM1 - Linear model 
@@ -350,26 +339,18 @@ Is the assumption valid? Highly Likely
 
 #### CLM3 - Multicollinearity
 
-```{r}
-cor_model1 <- data.matrix(subset(crime,
-           select = c("prbarr","prbconv", "polpc", "density", "log_polpc","log_density")))
-(cor(cor_model1))
-```
-<!-- removing since 0.34 isn't high enough for any concern, once it's above 0.9 then we consider removing.  I added the non-logged version for test.
-
-From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except log_density and prbarr. Lets run the variable inflation factor and see if the `r cor(crime$log_density,crime$prbarr)` is a problem
--->
-```{r}
-vif(model1)
-```
-Based on pairwise correlation in the dependent variables prbarr, prbconf, polpc, density, log_polpc and log_density, and no variance inflation factors near 10, we do not detect evidence of multicollinearity negatively impacting our specification.
-
-Let's also check how these variables are jointly affecting crime rate. 
+We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. We also see that probability of arrest and density are correlated `r cor(crime$prbarr,crime$density)`.
+Let's also check how probability of arrest and density alone are jointly affecting crime rate. 
 ```{r}
 model1.c = lm(log_crmrte ~ (prbarr) +  log_density, data = crime)
 f <- summary(model1.c )$fstatistic
 ```
 The p-value of the entire model $`r pf(f[1],f[2],f[3],lower.tail=F)`$ indicates that both these variables are jointly significant.
+
+```{r}
+vif(model1)
+```
+Based on pairwise correlation in the dependent variables prbarr, prbconf, polpc, density, log_polpc and log_density, and no variance inflation factors near 10, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 Is the assumption valid? YES
 
@@ -401,20 +382,18 @@ Is the assumption valid? NO
 plot(model1, which=2)
 hist(model1$residuals,main="Model1 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
 curve(dnorm(x, mean=0, sd=sd(model1$residuals)), col="red", lwd=2, add=TRUE) 
-
 ```
 Other than a few outliers, the distribution is relatively normal for our given sample size. 
 We do see some outliers in the Q-Q plot indicating that there is some skew because of the outlier values at the ends. 
 Is the assumption valid? Higly likely but not 100% sure
 
-
 #### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=4)
 plot(model1, which=5)
-
 ```
-There are some influential values however cook's distance is within the bounds. At value 51 and 79. if we remove those values and plot the graph, . 
+There are some influential values however cook's distance is within the bounds. At value 51 and 79. 
+####if we remove those values and plot the graph . 
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 model1.d <- lm(log_crmrte ~ (prbarr) + (prbconv)+
@@ -423,11 +402,18 @@ plot(model1.d, which=5)
 ```
 
 Index 51 and 79 - 
-The density and polpc is very low  -> where as the crime rate and prb arr and prb conv is similar to other counties. Both these are western counties
+The density and polpc is very low  -> where as the crime rate and prb arr and prb conv is similar to other counties. Both these are western counties. 
+Now, we could see Cook's is within the bounds.
 
 ```{r}
-model1_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
-                crime rate decreases by 1.92%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 55.5% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 11.1% when everything else stays the same")
+model1_intrepreation <-  c("","For ~ 1 unit increase in probability of arrest,
+                crime rate decreases by 1.92%",
+                "For ~ 1 unit increase in probability of conviction,
+                crime rate decreases by 0.69%", 
+                "For ~ 1% increase in polpc, 
+                crime rate increases by 55.5%",
+                "For ~ 1 unit increase (100 people per square mile) in density,
+                crime rate increases by 11.1%")
 model1_coefficients <- data.frame("Model 1 Coefficients" = round(model1$coefficients, 4),
                     "Interpretation" = model1_intrepreation)
 kable(model1_coefficients, booktabs = TRUE) %>%
@@ -444,15 +430,11 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 
 
 #### Model conclusion - 
-Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
+Probability of arrest has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
 The adjusted $R^2$ for this model is `r summary(model1)$adj.r.squared`% which means a lot of the the variations are explained by this model
 
-
-```{r}
-AIC(model1)
-```
-The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is 57.7 when only little information is lost.
+The Akaike information criterion indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model1)` when only little information is lost.
 
 
 ## Model2 - Optimal Specification
@@ -490,16 +472,18 @@ log(crmrte) &=\beta_0 + \beta_1(prbarr) + \beta_2(prbconv) + \beta_3log(polpc) +
 &\beta_7west*log(polpc)+ u
 \end{aligned}
 $$
-```{r}
 
-model2 = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+```{r}
+model2 = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc +
+              log_density + pctmin80 + 
               west + west * log_polpc, data = crime)
 (model2$coefficients)
 ``` 
 
 ####checking if county 71 that has both west=central=1 has any impact on our model. 
 ```{r}
-model2.a = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+model2.a = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + 
+                log_density + pctmin80 + 
               west + west * log_polpc, data = crime[crime$county != 71,])
 (model2.a$coefficients)
 ```
@@ -507,7 +491,8 @@ There is a very small change in the coefficient of west, 2.09-1.81 ~ 0.3 - but a
 
 ####checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
 ```{r}
-model2.b = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+model2.b = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc +
+                log_density + pctmin80 + 
               west + west * log_polpc, data = crime[crime$county != 115,])
 (model2.b$coefficients)
 ```
@@ -523,16 +508,8 @@ our views are identical to the previous model
 
 #### CLM3 - Multicollinearity
 
-```{r}
-cor_model2 <- data.matrix(subset(crime,
-           select = c("prbarr","prbconv", "polpc", "density",  
-                      "log_polpc", "log_density", "pctmin80", "west")))
-cor(cor_model2)
-```
+We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
 
-<!-- 
-From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except west and pctmin80. Lets run the variable inflation factor and see if the `r cor(crime$west,crime$pctmin80)` is a problem
--->
 ```{r}
 vif(model2)
 ```
@@ -578,7 +555,6 @@ Is the assumption valid? Higly likely but not 100% sure
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=4)
 plot(model2, which=5)
-
 ```
 There are some influential values however cook's distance is within the bounds. At value 90, 51 and 79. if we remove those values and plot the graph, . 
 
@@ -591,8 +567,20 @@ Index 51, 79 and 90 -
 The density and polpc is very low  -> where as the crime rate and prb arr and prb conv and pctmin80 is similar to other counties. ANd all are western counties.
 
 ```{r}
-model2_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
-                crime rate decreases by 1.82%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 73% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 10.4% when everything else stays the same","For every 1 unit increase in percent minority, crime rate increases by 1%","For all western counties crime rate decreases by 1.81% compared to other counties","For all western counties, a 1% increase in polpc reduces the crime rate by 0.26%")
+model2_intrepreation <-  c("","For ~ 1 unit increase in probability of arrest,
+                crime rate decreases by 1.82%",
+                "For ~ 1 unit increase in probability of conviction,
+                crime rate decreases by 0.69%",
+                "For ~ 1% increase in polpc, 
+                crime rate increases by 73%",
+                "For ~ 1 unit increase (100 people per square mile) in density,
+                crime rate increases by 10.4%",
+                "For ~ 1 unit increase in percent minority, 
+                crime rate increases by 1%",
+                "For all western counties crime rate decreases by 
+                1.81% ~ compared to other counties",
+                "For all western counties, 
+                an ~ 1% increase in polpc reduces the crime rate by 0.26%")
 model2_coefficients <- data.frame("Model 2 Coefficients" = round(model2$coefficients, 4),
                     "Interpretation" = model2_intrepreation)
 kable(model2_coefficients, booktabs = TRUE) %>%
@@ -607,18 +595,158 @@ All of the coefficients are highly statistically significant except density when
 coeftest(model2, vcov = vcovHC, level = 0.05)
 ```
 
-
 Model conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
 The adjusted $R^2$ for this model is `r summary(model2)$adj.r.squared`% which means a lot of the the variations are explained by this model:
 
+The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model2)` when only little information is lost.
+
+## Model3 - Sub-optimal Specification
+
+Other than the variables we added in our model2, we would like to see how pctymle and taxpc has any impact on the crime rate. Also, from our wage variable analysis above, we would like to add wcon and wfed to our model. We are not using any interaction terms here and want to check how crimerate is varying across all regions for these variables.
+
+$$
+\begin{aligned}
+log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \\
+&\beta_3log(polpc) +\beta_4log(density) + \beta_5(pctmin80) + \\
+\beta_6 log(pctymle) + \beta_7 log(taxpc) + \beta_8(wcon) + \beta_9(wfed) +u 
+\end{aligned}
+$$
 
 ```{r}
-AIC(model2)
-```
-The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is 9.02 when only little information is lost.
+model3 = lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density + pctmin80 
+            + log_pctymle + log_taxpc + wcon + wfed, data = crime)
+(model3$coefficients)
+``` 
 
+#### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+```{r}
+model3.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density + pctmin80 
+            + log_pctymle + log_taxpc + wcon + wfed, data = crime[crime$county != 115,])
+(model3.a$coefficients)
+```
+From the coefficents summary, we can observe that the county 115 doesn't have any big impact on our coefficients.
+
+###Testing the validity of the 6 assumptions of the CLM
+#### CLM1 - Linear model 
+
+our views are identical to the previous model
+
+#### CLM2 - Random Sampling 
+our views are identical to the previous model
+
+#### CLM3 - Multicollinearity
+We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
+We do see strong correleation between wfed and wcon 'r cor(crime$wcon,crime$wfed)` along with polpc and density. 
+Let's also check how these variables alone are affecting crime rate. 
+```{r}
+model3.b = lm(log_crmrte ~ (wcon) + (wfed) + log_density + log_polpc, data = crime)
+(model3.b$coefficients)
+f <- summary(model1.c )$fstatistic
+```
+
+The p-value of the entire model $`r pf(f[1],f[2],f[3],lower.tail=F)`$ indicates that both these variables are jointly significant. But the co-efficients of wcon and wfed are so-close to zero. 
+```{r}
+vif(model3)
+```
+
+Based on pairwise correlation in the dependent variables and no variance inflation factors near 10, we do not detect evidence of multicollinearity negatively impacting our specification.
+
+Is the assumption valid? YES
+
+#### CLM 4 - Zero conditional mean
+
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model3, which=1, cex.sub=0.75)
+```
+
+From the residuals vs fitted plot, the residuals are centered on 0 except with few values values. outside of that all values are close to zero. 
+Is the assumption valid? Highly Likely but not 100% sure
+
+#### CLM 5 - Homoscedasticity
+
+So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
+```{r}
+bptest(model3)
+```
+
+```{r}
+ncvTest(model3)
+```
+
+Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
+Is the assumption valid? NO
+
+#### CLM 6 - Normality of Residuals
+```{r , fig.height=3, fig.width=3, fig.show='hold'}
+plot(model3, which=2)
+hist(model3$residuals,main="Model3 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
+curve(dnorm(x, mean=0, sd=sd(model3$residuals)), col="red", lwd=2, add=TRUE) 
+
+```
+Other than a few outliers, the distribution is relatively normal for our given sample size. 
+We do see some outliers in the Q-Q plot indicating that there is some skew because of the outlier values at the ends. 
+Is the assumption valid? Higly likely but not 100% sure
+
+
+#### Cook's Distance:
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+plot(model3, which=4)
+plot(model3, which=5)
+```
+There are some influential values however cook's distance is within the bounds. At value 59 and 79. 
+####if we remove those values and plot the graph, we could see Cook's distance is within the bounds. 
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+model3.c <- lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime[c(-79,-59),])
+plot(model3.c, which=5)
+```
+
+Index 51 and 79 - 
+The density and polpc is very low  -> where as the crime rate and prb arr and prb conv is similar to other counties. Both these are western counties
+Index 59 - 
+This is an Eastern county with low crime rate and low polpc. But it has high pctmin80 that is affecting our accuracy.
+
+```{r}
+model3_intrepreation <-  c("","For ~ each 1 unit 
+increase in probability of arrest,
+                crime rate decreases by 1.87%",
+"For ~ each 1 unit increase in 
+probability of conviction,crime rate decreases by 0.7%", 
+"For ~ 1% increase in polpc, crime rate increases by 56.2%",
+"For ~ 1 unit increase (100 people per square mile)
+in density,crime rate increases by 9%", 
+"For ~ 1 unit increase of percent minority, crime rate increases by 1%",
+"For ~ 1% increase in pctymle, crime rate increases by 0.07%",
+"For ~ 1% increase in taxpc, crime rate increases by 0.9%",
+"For ~ 1 unit increase in wcon, crime rate increases by .09%",
+"For ~ 1 unit increase in wfed, crime rate increases by 0.09%")
+model3_coefficients <- data.frame("Model 3 Coefficients" = round(model3$coefficients, 4),
+                    "Interpretation" = model3_intrepreation)
+kable(model3_coefficients, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(3, width = "35em")
+```
+
+All of the coefficients are highly statistically significant for prbarr, prbconv,
+polpc, density and pctmin80 when we look at heteroskedastic-robust errors. But taxpc, pctymle, wcon and wfed doesn't have much signifance. But All these variables are jointly significant:
+
+#### coefficient-significance < Heteroskedastic-Robust Errors >
+```{r}
+coeftest(model3, vcov = vcovHC, level = 0.05)
+```
+
+
+#### Mode3 conclusion - 
+Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
+
+The adjusted $R^2$ for this model is `r summary(model3)$adj.r.squared`% which means a lot of the the variations are explained by this model. But is almost close to our model2. 
+
+The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model3)` when only little information is lost.
 
 # Omitted Variables
 
