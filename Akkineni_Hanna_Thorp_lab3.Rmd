@@ -258,33 +258,6 @@ corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 Using the correlation matrix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Density (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposite correlations in those last two. We also see strong correlation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
 
 
-```{r}
-barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
-       names.arg = c("East", "Central", "West"), main = "County locations")
-
-crime$region <- ifelse(crime$west == 1, "West",
-                      ifelse(crime$central == 1, "Central",
-                              ifelse(crime$other == 1, "East",        "other")))
-
-region = aggregate(density ~ region, data = crime, mean)
-region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
-region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
-colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
-
-kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") %>%
-    kable_styling(full_width = TRUE, latex_options = 
-                    c("HOLD_position", "striped", "repeat_header"),
-                  row_label_position = 1)  
-```
-
-There are three regions, two provided in the data set; West and Central, and those not in those two regions which we have determined to be East. 
-
-West shows a higher mean police per capita and a lower crime rate, which is likely more related to the
-
-```{r}
-region_model = lm(log(crmrte) ~ polpc, data = crime[crime$west, ])
-```
-
 # Model Analysis
 Transforming the variables and storing them in the data frame
 
@@ -447,7 +420,7 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
 
-Model conclusion - 
+####Model conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
 The adjusted $R^2$ for this model is 67.3% which means a lot of the the variations are explained by this model:
@@ -468,21 +441,27 @@ In additional to the explanatory variables introduced in our #Model1, we have de
 `west`, `pctmin80`, and an interaction of `west` and `polpc`. This is because from the below table, west some how higher polpc and low crime rate. which is opposite to what we have observed in our model1. Also, we would ike to pctmin80 -> how crime rate changes with percent minority.
 
 ```{r}
-barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
+barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
        names.arg = c("East", "Central", "West"), main = "County locations")
 
-crime$region <- ifelse(crime$west == 1, "west",
-                      ifelse(crime$central == 1, "central",
-                              ifelse(crime$east == 1, "east",        "other")))
+crime$region <- ifelse(crime$west == 1, "West",
+                      ifelse(crime$central == 1, "Central",
+                              ifelse(crime$other == 1, "East",        "other")))
+
 region = aggregate(density ~ region, data = crime, mean)
 region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
 region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
 colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
 
-#region
-kable(region)
+kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") %>%
+    kable_styling(full_width = TRUE, latex_options = 
+                    c("HOLD_position", "striped", "repeat_header"),
+                  row_label_position = 1)  
 ```
 
+There are three regions, two provided in the data set; West and Central, and those not in those two regions which we have determined to be East. 
+
+West shows a higher mean police per capita and a lower crime rate, which is likely opposing our initial expectations.
 
 $$
 \begin{aligned}
