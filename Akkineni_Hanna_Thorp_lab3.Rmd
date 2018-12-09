@@ -135,6 +135,9 @@ The value for the mean weekly wage for the service industry is 2177, nearly 8 ti
 ## Univariate Analysis
 
 ### Key Variable
+#### Crimes Committed Per Person
+**Campaign Significance**: The political campaign which hired us is interested in policy prescriptions derived from causal analysis of crime rates.  This is the key variable our models will attempt to explain.
+
 ```{r}
 quick_uni_analysis = function(variable, description, roundto = 8) {
   hist(variable, xlab = paste(tools::toTitleCase(description),
@@ -149,9 +152,6 @@ quick_uni_analysis = function(variable, description, roundto = 8) {
 
 ```
 
-#### Crimes Committed Per Person
-
-**Campaign Significance**: The political campaign which hired us is interested in policy prescriptions derived from causal analysis of crime rates.  This is the key variable our models will attempt to explain.
 ```{r, fig.height=3, fig.show='hold'}
 par(mfrow=c(1,2))
 quick_uni_analysis(crime$crmrte, 'crimes committed per person')
@@ -160,15 +160,13 @@ Crimes committed per capita has a fairly strong positive skew, applying a natura
 
 ```{r}
 crmrte.outliers = boxplot(crime$crmrte, plot = FALSE)$out
-length(crmrte.outliers)
 ```
 
-Crime rate has 5 outliers, none that are extreme or causing concern.
-
+Crime rate has `r length(crmrte.outliers)` outliers, none that are extreme or causing concern.
 
 ### Explanatory Variables
 
-#### Diagrams of Key Variables With and Without Log Transformations
+#### Diagrams of Variables With and Without Log Transformations
 ```{r, fig.height=10, fig.fullwidth = TRUE}
 par(mfrow=c(5,4))
 quick_uni_analysis(crime$prbarr, 'Probability of Arrest', roundto = 10)
@@ -181,6 +179,16 @@ quick_uni_analysis(crime$density, 'people per sq. mile', roundto = 14)
 quick_uni_analysis(crime$taxpc, 'tax revenue per capita', roundto = 16)
 quick_uni_analysis(crime$mix, 'Face-to-face offences to other', roundto = 9)
 quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
+quick_uni_analysis(crime$wcon, 'weekly wage, construction')
+quick_uni_analysis(crime$wtuc, 'wkly wge, trns, util, commun')
+quick_uni_analysis(crime$wtrd, 'wkly wge whlesle, retail, trade')
+quick_uni_analysis(crime$wfir, 'wkly wge, fin, ins, real est')
+quick_uni_analysis(crime$wser, 'wkly wge, service industry')
+quick_uni_analysis(crime$wmfg, 'wkly wge, manufacturing')
+quick_uni_analysis(crime$wfed, 'wkly wge fed employees')
+quick_uni_analysis(crime$wsta, 'wkly wge state employees')
+quick_uni_analysis(crime$wloc, 'wkly wge local gov emps')
+
 par(mfrow=c(1,1)) #Reset
 ```
 <!--
@@ -267,7 +275,16 @@ Using the correlation matrix above we can see there are some strong correlations
 
 
 # Model Analysis
-Transforming the variables and storing them in the data frame
+#### Identifying the key variables and applying necessary transformations and storing them in the data frame
+####Checking signifance of wage variables
+```{r}
+crmrate_wage_model <- lm(log(crmrte)~wcon + wtuc + wtrd + wfir + wser + wmfg
+                         +wfed + wsta + wloc, data=crime)
+(crmrate_wage_model$coefficients)
+f <- summary(crmrate_wage_model )$fstatistic
+```
+
+As all coefficients are close to 0 -> we can say none of the wage variables are independently significant. But, the F-stat p-value $`r pf(f[1],f[2],f[3],lower.tail=F)`$ shows that all the  wage variables are jointly significant. wcon and wfed are somewhat important.
 
 ```{r}
 crime$log_crmrte <- log(crime$crmrte)
@@ -294,14 +311,14 @@ $$
 ```{r}
 model1 = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime)
-summary(model1$coefficients)
+(model1$coefficients)
 ``` 
 
 ####checking if county 71 that has both west=central=1 has any impact on our model. 
 ```{r}
 model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 71,])
-summary(model1.a$coefficients)
+(model1.a$coefficients)
 ```
 We don't observe any major changes to our coefficients here, it could be because we didn't add any region variable in our model.
 
@@ -309,7 +326,7 @@ We don't observe any major changes to our coefficients here, it could be because
 ```{r}
 model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 115,])
-summary(model1.b$coefficients)
+(model1.b$coefficients)
 ```
 From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This will vary our CLM assumptions.
 
@@ -348,9 +365,8 @@ Let's also check how these variables are jointly affecting crime rate.
 ```{r}
 model1.c = lm(log_crmrte ~ (prbarr) +  log_density, data = crime)
 f <- summary(model1.c )$fstatistic
-    (pf(f[1],f[2],f[3],lower.tail=F))
 ```
-The p-value of the entire model indicates that both these variables are jointly significant.
+The p-value of the entire model $`r pf(f[1],f[2],f[3],lower.tail=F)`$ indicates that both these variables are jointly significant.
 
 Is the assumption valid? YES
 
@@ -407,10 +423,6 @@ Index 51 and 79 -
 The density and polpc is very low  -> where as the crime rate and prb arr and prb conv is similar to other counties. Both these are western counties
 
 ```{r}
-summary(model1)
-```
-
-```{r}
 model1_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
                 crime rate decreases by 1.92%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 55.5% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 11.1% when everything else stays the same")
 model1_coefficients <- data.frame("Model 1 Coefficients" = round(model1$coefficients, 4),
@@ -431,11 +443,8 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 ####Model conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
-The adjusted $R^2$ for this model is 67.3% which means a lot of the the variations are explained by this model:
+The adjusted $R^2$ for this model is `r summary(model1)$adj.r.squared`% which means a lot of the the variations are explained by this model
 
-```{r}
-summary(model1)$adj.r.squared
-```
 
 ```{r}
 AIC(model1)
@@ -448,7 +457,7 @@ The Akaike information criterion (AIC) indicates that the relative quality of pr
 In additional to the explanatory variables introduced in our #Model1, we have decided to include the following variables in the model.
 `west`, `pctmin80`, and an interaction of `west` and `polpc`. This is because from the below table, west some how higher polpc and low crime rate. which is opposite to what we have observed in our model1. Also, we would ike to pctmin80 -> how crime rate changes with percent minority.
 
-```{r}
+```{r  fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
        names.arg = c("East", "Central", "West"), main = "County locations")
 
@@ -576,10 +585,6 @@ Index 51, 79 and 90 -
 The density and polpc is very low  -> where as the crime rate and prb arr and prb conv and pctmin80 is similar to other counties. ANd all are western counties.
 
 ```{r}
-summary(model2)
-```
-
-```{r}
 model2_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
                 crime rate decreases by 1.82%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 73% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 10.4% when everything else stays the same","For every 1 unit increase in percent minority, crime rate increases by 1%","For all western counties crime rate decreases by 1.81% compared to other counties","For all western counties, a 1% increase in polpc reduces the crime rate by 0.26%")
 model2_coefficients <- data.frame("Model 2 Coefficients" = round(model2$coefficients, 4),
@@ -600,11 +605,8 @@ coeftest(model2, vcov = vcovHC, level = 0.05)
 Model conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
-The adjusted $R^2$ for this model is 82.2% which means a lot of the the variations are explained by this model:
+The adjusted $R^2$ for this model is `r summary(model2)$adj.r.squared`% which means a lot of the the variations are explained by this model:
 
-```{r}
-summary(model2)$adj.r.squared
-```
 
 ```{r}
 AIC(model2)
