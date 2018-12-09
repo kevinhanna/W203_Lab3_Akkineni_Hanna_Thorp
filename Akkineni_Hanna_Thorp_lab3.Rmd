@@ -34,6 +34,19 @@ suppressMessages(library(lmtest))
 library(corrplot)
 library(sandwich)
 
+crime$county = as.factor(crime$county)
+crime$west = as.logical(crime$west)
+crime$central = as.logical(crime$central)
+crime$urban = as.logical(crime$urban)
+
+# Create a variable for counties not in west or central.
+crime$other <- !(crime$west | crime$central)
+
+# Average of all weekly wage variables. 
+crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
+                   crime$wser + crime$wmfg + crime$wfed + crime$wsta +
+                   crime$wloc)/9
+
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
 codebook <- read.csv('codebook.csv')
@@ -88,28 +101,7 @@ crime = crime[!duplicated(crime), ]
 crime$prbconv = as.numeric(as.character(crime$prbconv))
 ```
 
-#### Convert columns to factors and logical.
-```{r}
 
-crime$west <- as.logical(crime$west)
-crime$central <- as.logical(crime$central)
-crime$urban <- as.logical(crime$urban)
-
-# Create a variable for counties not in west or central.
-crime$other <- !(crime$west | crime$central)
-
-# Average of all weekly wage variables. 
-crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
-                   crime$wser + crime$wmfg + crime$wfed + crime$wsta +
-                   crime$wloc)/9
-
-# Used for displaying subsets of variables. 
-columns_pretty_sort = c("county", "year", "crmrte", "prbarr", "prbconv",
-                       "prbpris", "avgsen", "mix",  "polpc", "density", 
-                       "taxpc", "other", "central", "west", "urban", 
-                       "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
-                       "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
-```
 
 ### Concerns about the data
 
@@ -259,7 +251,14 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 
 ### Correlation Matrix
 ```{r}
-corrmatrix <- cor(crime[,columns_pretty_sort[3:26]])
+# Used for displaying subsets of variables. 
+columns_logical_order = c("county", "year", "crmrte", "prbarr", "prbconv",
+                       "prbpris", "avgsen", "mix",  "polpc", "density", 
+                       "taxpc", "other", "central", "west", "urban", 
+                       "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
+                       "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
+
+corrmatrix <- cor(crime[,columns_logical_order[3:26]])
 corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 ```
 
