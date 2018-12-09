@@ -407,13 +407,13 @@ Now, we could see Cook's is within the bounds.
 
 ```{r}
 model1_intrepreation <-  c("","For ~ 1 unit increase in probability of arrest,
-                crime rate decreases by 1.92%",
+                crime rate decreases by ~ 1.92%",
                 "For ~ 1 unit increase in probability of conviction,
-                crime rate decreases by 0.69%", 
+                crime rate decreases by ~ 0.69%", 
                 "For ~ 1% increase in polpc, 
-                crime rate increases by 55.5%",
+                crime rate increases by ~ 0.55%",
                 "For ~ 1 unit increase (100 people per square mile) in density,
-                crime rate increases by 11.1%")
+                crime rate increases by ~ 0.111%")
 model1_coefficients <- data.frame("Model 1 Coefficients" = round(model1$coefficients, 4),
                     "Interpretation" = model1_intrepreation)
 kable(model1_coefficients, booktabs = TRUE) %>%
@@ -568,19 +568,19 @@ The density and polpc is very low  -> where as the crime rate and prb arr and pr
 
 ```{r}
 model2_intrepreation <-  c("","For ~ 1 unit increase in probability of arrest,
-                crime rate decreases by 1.82%",
+                crime rate decreases by ~ 1.82%",
                 "For ~ 1 unit increase in probability of conviction,
-                crime rate decreases by 0.69%",
+              crime rate decreases by ~ 0.69%",
                 "For ~ 1% increase in polpc, 
-                crime rate increases by 73%",
+                crime rate increases by ~ 0.73%",
                 "For ~ 1 unit increase (100 people per square mile) in density,
-                crime rate increases by 10.4%",
+                crime rate increases by ~ 0.104%",
                 "For ~ 1 unit increase in percent minority, 
-                crime rate increases by 1%",
-                "For all western counties crime rate decreases by 
+                crime rate increases by ~ 1%",
+                "For all western counties crime rate decreases by ~
                 1.81% ~ compared to other counties",
                 "For all western counties, 
-                an ~ 1% increase in polpc reduces the crime rate by 0.26%")
+                an ~ 1% increase in polpc reduces the crime rate by ~ 0.26%")
 model2_coefficients <- data.frame("Model 2 Coefficients" = round(model2$coefficients, 4),
                     "Interpretation" = model2_intrepreation)
 kable(model2_coefficients, booktabs = TRUE) %>%
@@ -717,14 +717,14 @@ increase in probability of arrest,
                 crime rate decreases by 1.87%",
 "For ~ each 1 unit increase in 
 probability of conviction,crime rate decreases by 0.7%", 
-"For ~ 1% increase in polpc, crime rate increases by 56.2%",
+"For ~ 1% increase in polpc, crime rate increases by 0.562%",
 "For ~ 1 unit increase (100 people per square mile)
-in density,crime rate increases by 9%", 
-"For ~ 1 unit increase of percent minority, crime rate increases by 1%",
-"For ~ 1% increase in pctymle, crime rate increases by 0.07%",
-"For ~ 1% increase in taxpc, crime rate increases by 0.9%",
-"For ~ 1 unit increase in wcon, crime rate increases by .09%",
-"For ~ 1 unit increase in wfed, crime rate increases by 0.09%")
+in density,crime rate increases by 0.09%", 
+"For ~ 1 unit increase of percent minority, crime rate increases by ~ 1.12%",
+"For ~ 1% increase in pctymle, crime rate increases by ~ 0.07%",
+"For ~ 1% increase in taxpc, crime rate increases by ~ 0.009%",
+"For ~ 1 unit increase in wcon, crime rate increases by ~ .01%",
+"For ~ 1 unit increase in wfed, crime rate increases by ~ 0.01%")
 model3_coefficients <- data.frame("Model 3 Coefficients" = round(model3$coefficients, 4),
                     "Interpretation" = model3_intrepreation)
 kable(model3_coefficients, booktabs = TRUE) %>%
@@ -744,9 +744,43 @@ coeftest(model3, vcov = vcovHC, level = 0.05)
 #### Mode3 conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
+The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model3)` when only little information is lost.
 The adjusted $R^2$ for this model is `r summary(model3)$adj.r.squared`% which means a lot of the the variations are explained by this model. But is almost close to our model2. 
 
-The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model3)` when only little information is lost.
+Let's run waldtest to see if these additional variables has any signifiance. 
+
+```{r}
+waldtest(model3, model1, vcov = vcovHC)
+```
+The Wald test also reveals that variables added to model 3 jointly have no effect on crime rate.
+
+Now let's compare the coefficients of all models and also adding standard errors to the models:
+
+```{r, warning=FALSE}
+se.model1 <- sqrt(diag(vcovHC(model1)))
+se.model2 <- sqrt(diag(vcovHC(model2)))
+se.model3 <- sqrt(diag(vcovHC(model3)))
+stargazer(model1, model2, model3,
+          type = "text",
+                   keep.stat = c("rsq", "n"),
+         title = "Linear Models Predicting Crime Rate",
+         column.labels=c("Not good","Good","Average"),
+          se = list(se.model1, se.model2, se.model3),
+          star.cutoffs = c(0.05, 0.01, 0.001),
+          dep.var.caption  = "Measuring Crime Rate",
+         dep.var.labels   = "Crime Rate",
+          no.space = TRUE, align = TRUE)
+```
+
+
+**This table demonstrates the following:**
+
+ - The key Variables `prbarr` and `prbconv` have robust estimates in all models. Co-efficient of `prbarr` is always higher than `prbconv`. Hence, it is more likely to cause crime rate to change.
+ - The coefficient for `density` decreases as we add more variables that likely interact with it. Eg. `west`. From the correlation matrix, we do see west is correlated with density. 
+ - `polpc` maintains its statistically significant coefficient with low standard error and low  coefficient in model 3. This could be because polpc has interaction with other variables.
+ - `pctmin80` is also robust as its coefficient stays statistically significant in all models.
+ - All other variables in model3 are not statistically significant. We can conclude these  variables are not robust enough to introduce them in our main model.
+
 
 # Omitted Variables
 
