@@ -43,7 +43,7 @@ crime$central = as.logical(crime$central)
 crime$urban = as.logical(crime$urban)
 
 # Create a variable for counties not in west or central.
-crime$other <- !(crime$west | crime$central)
+crime$east <- !(crime$west | crime$central)
 
 # Average of all weekly wage variables. 
 crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
@@ -71,7 +71,9 @@ crime$avgwage = (crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +
 
 We were provided with a dataset that includes crime statistics from the North Carolina Department of Corrections' prison and probation files, demographic statistics taken from the decennial census, police data derived from FBI police agency data and wage data from the North Carolina Employment Security commission.  In all we were provided with 25 variables and 90 counties.
 
-Some of the values in this dataset were calculated from other datasets and we found some characteristics in the dataset which may bring its veracity in to question and we have addressed those below and in our analyses. 
+Some of the values in this dataset were calculated from other datasets and we found some characteristics in the dataset which may bring its veracity in to question and we have addressed those below and in our analyses.
+
+Additionally, we added two new variables based on data provided to aid in our analysis.  'avgwage' is the mean of all the weekly wages included in the dataset, and 'east' is all the counties that are not in central or west.  It is possible this is not a safe assumption, however that distinction will not become relevant in this analysis. 
 
 ```{r echo = FALSE, results = 'asis'}
 kable(codebook[, c(2,3)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Crime Data Codebook") %>%
@@ -107,7 +109,7 @@ crime$prbconv = as.numeric(as.character(crime$prbconv))
 ### Concerns about the data
 
 #### prbarr (Probability of Arrest)
-We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to either be a labeling error, as it is a ratio used to approximate a probability, or erroneous, as we'll explain later, there are several concerning factors about the observations for county 115. 
+We found that county 115 contained a value of 1.09 in prbarr (probability of arrest) which is not possible.  We beleive this to either be a labeling error, as it is a ratio used to approximate a probability, or erroneous, as we'll explain later, there are several concerns about the observations for county 115. 
 
 #### prbconv (Probability of Conviction)
 We found 10 observations with values greater than 1, which, again, is not a possible value for probability.  The documentation in the codebook specifies that "(t)he probability of conviction is proxied by the ratio of convictions to arrests", which leaves some ambiguity, however it is plausible to have values greater than 1 as a single arrest can result in multiple convictions and persons can be convicted in absentia. Similar to the prbarr, we beleive this to be a labeling error, as it is a ratio used to approximate a probability, rather than a true probability.
@@ -159,7 +161,8 @@ quick_uni_analysis(crime$crmrte, 'crimes committed per person')
 Crimes committed per capita has a fairly strong positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject. The transformed variable is preferable for modelling. 
 
 ```{r}
-crmrte.outliers = boxplot(crime$crmrte, plot = FALSE)$out
+crime$log_crmrte <- log(crime$crmrte)
+crmrte.outliers = boxplot(crime$log_crmrte, plot = FALSE)$out
 ```
 
 Crime rate has `r length(crmrte.outliers)` outliers, none that are extreme or causing concern.
@@ -191,16 +194,11 @@ quick_uni_analysis(crime$wloc, 'wkly wge local gov emps')
 
 par(mfrow=c(1,1)) #Reset
 ```
-<!--
-```{r, fig.height=10, fig.fullwidth = TRUE}
-#par(mfrow=c(3,3))
-#boxplot(crime$prbarr, xlab = 'Probability of Arrest', notch = TRUE)
-```
--->
 
 #### Probability of Arrest
 
 Probability of Arrest has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject the null hypothesis of normality. The transformed variable is preferable for modelling.
+
 
 #### Probability of Conviction
 
@@ -216,34 +214,35 @@ The logged version is preferable from both an interpretation and modeling assump
 
 #### Police as a Percentage of Population
 
-Both logged and un-logged versions of police as a percentage of the population are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
+Police as a percentage of population has a possitive skew, performing a natural log is preferable for modeling.  
 
-<!--
-I agree with Alex now, this is redunant with the omitted variable secion on this variable.
-
-The number of police can conceivably be either the cause of or result of crime rates.  However, there is a fair amount of research showing increasing the police workforce causes a reduction in crime according to Vollaard & Hamad $^{(1)}$ .  Without timeseries data with randomized changes to Police as a Percentage of Population we cannon determine the causal impact of increasing or decreasing police.  However, many other studies show that increasing the size of a police force does reduce crime.
--->
-<!-- 
-http://www.princeton.edu/~smello/papers/cops.pdf 
--->
-
-Both logged and un-logged versions of the percent of population that is young and male are non-normal. Neither is inherently preferable from a modeling assumptions standpoint. 
+```{r}
+crime$log_polpc <- log(crime$polpc)
+```
 
 <!--$^{(1)}$ The Journal of Law & Economic https://www.jstor.org/stable/10.1086/666614 -->
 
 #### Percentage of Population That Are Young Males
 
-This variable has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
+This variable has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal and more consistent with other precentages.
 
+```{r}
+crime$log_pctymle <- log(crime$pctymle)
+```
 
 #### People per Square Mile
 
 There is one extreme outlier for county 173, with 0.000023 people per square mile.  This will affect our modeling, specifically the cooks distance.  Without that outlier, this variable is more normal with a log transformation.
 
+```{r}
+crime$log_density <- log(crime$density)
+```
 #### Tax Revenue per Capita
 
 Tax revenue per capita has a strong positive skew, using a natural log transformation results in a distribution that is still skewed, however, it is closer to normal.
-
+```{r}
+crime$log_taxpc <- log(crime$taxpc)
+```
 #### Face-to-face offences to Other (Offence Mix)
 
 This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes include violent crimes and those with a higher probability of violence. 
@@ -251,6 +250,10 @@ This is a ratio of face-to-face crimes to all other crimes.  Face-to-face crimes
 **Campaign Significance**: Violent crimes create fear and fear is a strong motivator for voters.
 
 The mix of face-to-face crimes to other crimes has a positive skew, applying a natural log transformation creates a more symmetrical distribution. However, the resulting Shapiro-Wilk test would still reject the null hypothesis of normality.  That said, the log transformation is preferable for modelling.
+
+```{r}
+crime$log_mix <- log(crime$mix)
+```
 
 #### Percentage Minority, 1980
 
@@ -263,7 +266,7 @@ The mix of face-to-face crimes to other crimes has a positive skew, applying a n
 # Used for displaying subsets of variables. 
 columns_logical_order = c("county", "year", "crmrte", "prbarr", "prbconv",
                        "prbpris", "avgsen", "mix",  "polpc", "density", 
-                       "taxpc", "other", "central", "west", "urban", 
+                       "taxpc", "east", "central", "west", "urban", 
                        "pctmin80", "pctymle", "avgwage", "wcon", "wtuc", "wtrd", 
                        "wfir", "wser", "wmfg","wfed", "wsta", "wloc")
 
@@ -273,10 +276,7 @@ corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 
 Using the correlation matrix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Density (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposite correlations in those last two. We also see strong correlation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
 
-
-# Model Analysis
-#### Identifying the key variables and applying necessary transformations and storing them in the data frame
-####Checking signifance of wage variables
+#### Checking signifance of wage variables
 ```{r}
 crmrate_wage_model <- lm(log(crmrte)~wcon + wtuc + wtrd + wfir + wser + wmfg
                          +wfed + wsta + wloc, data=crime)
@@ -285,6 +285,10 @@ f <- summary(crmrate_wage_model )$fstatistic
 ```
 
 As all coefficients are close to 0 -> we can say none of the wage variables are independently significant. But, the F-stat p-value $`r pf(f[1],f[2],f[3],lower.tail=F)`$ shows that all the  wage variables are jointly significant. wcon and wfed are somewhat important.
+
+# Model Analysis
+## Identifying the key variables and applying necessary transformations and storing them in the data frame
+
 
 ```{r}
 crime$log_crmrte <- log(crime$crmrte)
@@ -298,12 +302,12 @@ crime$log_pctymle <- log(crime$pctymle)
 ## Model1 - Minimum Specification
 
 Variables of Interest -> prbconv, prbarr, density, polpc.
-Based on the table above, we We anticipate that the crime rate depends on certainty of punishment and severity of punishment. Also, we anticipate that polpc and density has an impact on the crime rate. As such, our base model includes variables that attempt to operationalize those concepts
+Based on the table above, we We anticipate that the crime rate depends on certainty of punishment and severity of punishment. Also, we anticipate that police per capita and density has an impact on the crime rate. As such, our base model includes variables that attempt to operationalize those concepts
 
 $$
 \begin{aligned}
 log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \\
-&\beta_3log(prbpris) +\beta_4log(avgsen) + u
+&\beta_3log(polpc) +\beta_4log(density) + u
 \end{aligned}
 $$
 
@@ -314,7 +318,7 @@ model1 = lm(log_crmrte ~ (prbarr) + (prbconv)+
 (model1$coefficients)
 ``` 
 
-####checking if county 71 that has both west=central=1 has any impact on our model. 
+### Checking if county 71 that has both west=central=1 has any impact on our model. 
 ```{r}
 model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 71,])
@@ -322,7 +326,7 @@ model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
 ```
 We don't observe any major changes to our coefficients here, it could be because we didn't add any region variable in our model.
 
-####checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
 ```{r}
 model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 115,])
@@ -330,7 +334,7 @@ model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
 ```
 From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This will vary our CLM assumptions.
 
-###Testing the validity of the 6 assumptions of the CLM
+### Testing the validity of the 6 assumptions of the CLM
 #### CLM1 - Linear model 
 
 The model is specified such that the dependent variable is a linear function of the explanatory variables.
@@ -347,19 +351,18 @@ Is the assumption valid? Highly Likely
 #### CLM3 - Multicollinearity
 
 ```{r}
-# Find the maximum Correlation
 cor_model1 <- data.matrix(subset(crime,
-           select = c("log_crmrte","prbarr","prbconv","log_polpc","log_density")))
-cor_model1 = cor(cor_model1)
-diag(cor_model1) = 0 # Zero the diagonal as we are uninterested in those.
-(cor_model1)
+           select = c("prbarr","prbconv", "polpc", "density", "log_polpc","log_density")))
+(cor(cor_model1))
 ```
-From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except log_density and prbarr. Lets run the variable inflation factor and see if the `r cor(crime$log_density,crime$prbarr)` is a problem
+<!-- removing since 0.34 isn't high enough for any concern, once it's above 0.9 then we consider removing.  I added the non-logged version for test.
 
+From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except log_density and prbarr. Lets run the variable inflation factor and see if the `r cor(crime$log_density,crime$prbarr)` is a problem
+-->
 ```{r}
 vif(model1)
 ```
-Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
+Based on pairwise correlation in the dependent variables prbarr, prbconf, polpc, density, log_polpc and log_density, and no variance inflation factors near 10, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 Let's also check how these variables are jointly affecting crime rate. 
 ```{r}
@@ -393,7 +396,7 @@ ncvTest(model1)
 Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
 Is the assumption valid? NO
 
-#### Normality of Residuals
+#### CLM 6 - Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=2)
 hist(model1$residuals,main="Model1 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
@@ -440,7 +443,7 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
 
-####Model conclusion - 
+#### Model conclusion - 
 Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
 The adjusted $R^2$ for this model is `r summary(model1)$adj.r.squared`% which means a lot of the the variations are explained by this model
@@ -458,12 +461,12 @@ In additional to the explanatory variables introduced in our #Model1, we have de
 `west`, `pctmin80`, and an interaction of `west` and `polpc`. This is because from the below table, west some how higher polpc and low crime rate. which is opposite to what we have observed in our model1. Also, we would ike to pctmin80 -> how crime rate changes with percent minority.
 
 ```{r  fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
+barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
        names.arg = c("East", "Central", "West"), main = "County locations")
 
 crime$region <- ifelse(crime$west == 1, "West",
                       ifelse(crime$central == 1, "Central",
-                              ifelse(crime$other == 1, "East",        "other")))
+                              ifelse(crime$east == 1, "East",        "other")))
 
 region = aggregate(density ~ region, data = crime, mean)
 region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
@@ -521,16 +524,19 @@ our views are identical to the previous model
 #### CLM3 - Multicollinearity
 
 ```{r}
-# Find the maximum Correlation
 cor_model2 <- data.matrix(subset(crime,
-           select = c("log_crmrte","prbarr","prbconv","log_polpc","log_density","pctmin80","west")))
+           select = c("prbarr","prbconv", "polpc", "density",  
+                      "log_polpc", "log_density", "pctmin80", "west")))
 cor(cor_model2)
 ```
+
+<!-- 
 From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except west and pctmin80. Lets run the variable inflation factor and see if the `r cor(crime$west,crime$pctmin80)` is a problem
+-->
 ```{r}
 vif(model2)
 ```
-Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
+Based on the low pairwise correlation between the independent variables and variance inflation factors all well below 10, we do not detect evidence of multicollinearity negatively impacting our specification.
 
 Is the assumption valid? YES
 
@@ -557,7 +563,7 @@ ncvTest(model2)
 Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
 Is the assumption valid? NO
 
-#### Normality of Residuals
+#### CLM 6 - Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=2)
 hist(model2$residuals,main="Model2 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
@@ -647,3 +653,5 @@ Finally, our dataset contains several variables with nominal wages for certain i
 We examined several models of crime rate and found a directionally consistent, statistically significant negative relationship for the probability of arrest and the probability of conviction on crime rate. As such, policies adopted should focus on increasing the certainty of punishment for committing crimes. One such policy could focus on improving information flow from local communities to police and judicial officials. A good model to build off of is community policing, where police focus on developing ties to the local community to build trust and thereby promote flow of needed information. 
 
 That said, our ability to draw policy prescriptions from our models is limited due to notable omitted variable bias, which leads our model's estimators to be biased. These omitted variable biases are not possible to overcome while limited to the current data collection process. Should more work requiring causal inference be desired on these relationships in the future, we would seek input into the data collecting process in order to correct for some of our omitted variable biases. 
+
+For future analyses, the availability of poverty rate, number of years of education and percentage of convicts, and the availability of these data as a regularly collected time series would aid in removing the above biases from the analysis and allow for more concrete policy recommendations. 

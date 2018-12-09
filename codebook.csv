@@ -24,3 +24,5 @@ Observation,Variable,Label,Notes
 23,wloc,wkly wge local gov emps,
 24,mix,offense mix: face-to-face/other,
 25,pctymle,percent young male,
+26,east,Created: observations not in west or central,
+27,avgwage,Created: mean of all wages,
