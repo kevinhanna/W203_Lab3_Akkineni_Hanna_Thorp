@@ -1,11 +1,11 @@
 ---
-title: 'Lab 3: Reducing Crime (DRAFT: Stage 1)'
+title: 'Lab 3: Reducing Crime (FINAL: Stage 3)'
 author: "N. Akkineni, K. Hanna, A. Thorp"
-date: "November 27, 2018"
+date: "December 10, 2018"
 output:
     pdf_document:
     toc: true
-    toc_depth: 1
+    toc_depth: 3
     fig_height: 3
     df_print: kable
     highlight: tango
@@ -182,6 +182,11 @@ quick_uni_analysis(crime$density, 'people per sq. mile', roundto = 14)
 quick_uni_analysis(crime$taxpc, 'tax revenue per capita', roundto = 16)
 quick_uni_analysis(crime$mix, 'Face-to-face offences to other', roundto = 9)
 quick_uni_analysis(crime$pctmin80, 'perc. minority, 1980')
+
+par(mfrow=c(1,1)) #Reset
+```
+
+<!--
 quick_uni_analysis(crime$wcon, 'weekly wage, construction')
 quick_uni_analysis(crime$wtuc, 'wkly wge, trns, util, commun')
 quick_uni_analysis(crime$wtrd, 'wkly wge whlesle, retail, trade')
@@ -191,10 +196,7 @@ quick_uni_analysis(crime$wmfg, 'wkly wge, manufacturing')
 quick_uni_analysis(crime$wfed, 'wkly wge fed employees')
 quick_uni_analysis(crime$wsta, 'wkly wge state employees')
 quick_uni_analysis(crime$wloc, 'wkly wge local gov emps')
-
-par(mfrow=c(1,1)) #Reset
-```
-
+-->
 #### Probability of Arrest
 
 Probability of Arrest has a positive skew, applying a natural log transformation creates a more symmetrical distribution and results in a Shapiro-Wilk test p-value that we cannot reject the null hypothesis of normality. The transformed variable is preferable for modelling.
@@ -288,7 +290,7 @@ As all coefficients are close to 0 -> we can say none of the wage variables are 
 
 # Model Analysis
 
-## Model1 - Minimum Specification
+## Model 1 - Minimum Specification
 
 Variables of Interest -> prbconv, prbarr, density, polpc.
 Based on the table above, We anticipate that the crime rate depends on certainty of punishment and severity of punishment along with police per capita and density. As such, our base model includes variables that attempt to operationalize those concepts
@@ -307,15 +309,22 @@ model1 = lm(log_crmrte ~ (prbarr) + (prbconv)+
 (model1$coefficients)
 ``` 
 
-#### Checking if county 71 that has both west=central=1 has any impact on our model. 
+<!-- I think since west and central are not included in the model it's a safe assumption that this quality issue will not affect the outcom. KH
+
+#### Intuition of the effects of potential data issues in county 71 on the model
+
+Checking if county 71 that has both west=central=1 has any impact on our model. 
 ```{r}
 model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 71,])
 (model1.a$coefficients)
 ```
 We don't observe any major changes to our coefficients here, it could be because we didn't add any region variable in our model.
+-->
 
-#### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+### Intuition of the effects of potential data issues in county 115 on the model
+
+Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
 ```{r}
 model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density, data = crime[crime$county != 115,])
@@ -323,21 +332,25 @@ model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
 ```
 From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This county can impact our CLM assumptions.
 
-### Testing the validity of the 6 assumptions of the CLM
-#### CLM1 - Linear model 
+### Testing the validity of the 6 CLM assumptions
 
-The model is specified such that the dependent variable is a linear function of the explanatory variables.
+#### CLM 1: Linear model 
+
+The mode l is specified such that the dependent variable is a linear function of the explanatory variables.
+
 We assume linearity in the dependent variable vs independent variables by default. 
-Is the assumption valid? Yes 
 
-#### CLM2 - Random Sampling 
+**Is the assumption valid? Yes**
+
+#### CLM 2: Random Sampling 
+
 Since we got 90% of records from the total counties in North Carolina, we expect this assumption is valid. But to point out, the counties we didn't have can have high density or high policing and low probability of arrest or probability of conviction. This can change our interpretation of the crime rate. Since, we see that crime rate is normally distributed in the given data set, we anticipate that this would be same if we consider the entire population. 
 
 We can see that west has less number of counties compared to east or central. This can introduce some bias.But, if we look at the map of North Carolina, west side is narrower compared to central and east. So, this confirms that the bias is not a problem here.
 
 Is the assumption valid? Highly Likely
 
-#### CLM3 - Multicollinearity
+#### CLM 3: Multicollinearity
 
 We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. We also see that probability of arrest and density are correlated `r cor(crime$prbarr,crime$density)`.
 Let's also check how probability of arrest and density alone are jointly affecting crime rate. 
@@ -354,7 +367,7 @@ Based on pairwise correlation in the dependent variables prbarr, prbconf, polpc,
 
 Is the assumption valid? YES
 
-#### CLM 4 - Zero conditional mean
+#### CLM 4: Zero conditional mean
 
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model1, which=1, cex.sub=0.75)
@@ -363,7 +376,7 @@ plot(model1, which=1, cex.sub=0.75)
 From the residuals vs fitted plot, the residuals are centered on 0 except with three values. outside of that all values are close to zero. 
 Is the assumption valid? Highly Likely but not 100% sure
 
-#### CLM 5 - Homoscedasticity
+#### CLM 5: Homoscedasticity
 
 So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
 ```{r}
@@ -377,7 +390,8 @@ ncvTest(model1)
 Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
 Is the assumption valid? NO
 
-#### CLM 6 - Normality of Residuals
+#### CLM 6: Normality of Residuals
+
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=2)
 hist(model1$residuals,main="Model1 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
@@ -388,12 +402,14 @@ We do see some outliers in the Q-Q plot indicating that there is some skew becau
 Is the assumption valid? Higly likely but not 100% sure
 
 #### Cook's Distance:
+
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=4)
 plot(model1, which=5)
 ```
 There are some influential values however cook's distance is within the bounds. At value 51 and 79. 
-####if we remove those values and plot the graph . 
+
+#### if we remove those values and plot the graph . 
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 model1.d <- lm(log_crmrte ~ (prbarr) + (prbconv)+
@@ -423,13 +439,15 @@ kable(model1_coefficients, booktabs = TRUE) %>%
 
 All of the coefficients are highly statistically significant when we look at heteroskedastic-robust errors:
 
-#### coefficient-significance < Heteroskedastic-Robust Errors >
+#### Coefficient-Significance (Heteroskedastic-Robust Errors)
+
 ```{r}
 coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
 
-#### Model conclusion - 
+#### Model 1 Conclusion 
+
 Probability of arrest has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
 
 The adjusted $R^2$ for this model is `r summary(model1)$adj.r.squared`% which means a lot of the the variations are explained by this model
@@ -437,14 +455,16 @@ The adjusted $R^2$ for this model is `r summary(model1)$adj.r.squared`% which me
 The Akaike information criterion indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model1)` when only little information is lost.
 
 
-## Model2 - Optimal Specification
+## Model 2 - Optimal Specification
 
 In additional to the explanatory variables introduced in our #Model1, we have decided to include the following variables in the model.
 `west`, `pctmin80`, and an interaction of `west` and `polpc`. This is because from the below table, west some how higher polpc and low crime rate. which is opposite to what we have observed in our model1. Also, we would ike to pctmin80 -> how crime rate changes with percent minority.
 
-```{r  fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
-       names.arg = c("East", "Central", "West"), main = "County locations")
+```{r  fig.height=4, fig.width=4.5, fig.align='center', fig.show='hold'}
+boxplot(crime$crmrte[crime$east],crime$crmrte[crime$central],
+crime$crmrte[crime$west], names=c("East","Central","West"),
+main="Crime Rate and Location", xlab ="Location",ylab="Crime Rate")
+
 
 crime$region <- ifelse(crime$west == 1, "West",
                       ifelse(crime$central == 1, "Central",
@@ -453,7 +473,7 @@ crime$region <- ifelse(crime$west == 1, "West",
 region = aggregate(density ~ region, data = crime, mean)
 region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
 region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
-colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
+colnames(region) = c("Region", "Mean Density", "Mean Police per Cap", "Mean Crime Rate")
 
 kable(region, "latex", longtable = TRUE, booktabs = TRUE, caption = "Regions") %>%
     kable_styling(full_width = TRUE, latex_options = 
@@ -480,16 +500,22 @@ model2 = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc +
 (model2$coefficients)
 ``` 
 
-####checking if county 71 that has both west=central=1 has any impact on our model. 
+### Intuition of the Effects of County 71 Existing in Both Central and West
+
+This new model removes county 71 as the dataset we were provided show it is in both Western and Central North Carolina, this will allow us to understand the impacts of this error on our model. 
+
 ```{r}
 model2.a = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + 
                 log_density + pctmin80 + 
               west + west * log_polpc, data = crime[crime$county != 71,])
 (model2.a$coefficients)
 ```
-There is a very small change in the coefficient of west, 2.09-1.81 ~ 0.3 - but almost all other coefficients doesn't change much
 
-####checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+There is a small change in the coefficient of west, -1.81 - (-2.09) = 0.3 when county 71 is removed.  This change of ~0.3 represents bias in west if county 71 in fact in central NC, however county 71, Gaston County, is in Western NC and keeping it in our model when int including the central will provide the correct results.   
+
+### Intuition of the effects of potential data issues in county 115 on the model
+
+checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
 ```{r}
 model2.b = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc +
                 log_density + pctmin80 + 
@@ -498,15 +524,16 @@ model2.b = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc +
 ```
 From the coefficents summary, we can observe that the county 115 deosnt have a very high impact on our proposed model. but this changed alot in our previous model. This could be due to low crime rate and high polpc in western regions.
 
-###Testing the validity of the 6 assumptions of the CLM
-#### CLM1 - Linear model 
+###  Testing the Validity of the 6 CLM assumptions
+
+#### CLM 1: Linear model 
 
 our views are identical to the previous model
 
-#### CLM2 - Random Sampling 
+#### CLM 2: Random Sampling 
 our views are identical to the previous model
 
-#### CLM3 - Multicollinearity
+#### CLM 3: Multicollinearity
 
 We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
 
@@ -517,7 +544,7 @@ Based on the low pairwise correlation between the independent variables and vari
 
 Is the assumption valid? YES
 
-#### CLM 4 - Zero conditional mean
+#### CLM 4: Zero conditional mean
 
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model2, which=1, cex.sub=0.75)
@@ -526,7 +553,7 @@ plot(model2, which=1, cex.sub=0.75)
 From the residuals vs fitted plot, the residuals are centered on 0 except few values values. outside of that all values are close to zero. 
 Is the assumption valid? Highly Likely but not 100% sure
 
-#### CLM 5 - Homoscedasticity
+#### CLM 5: Homoscedasticity
 
 So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
 ```{r}
@@ -540,7 +567,7 @@ ncvTest(model2)
 Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
 Is the assumption valid? NO
 
-#### CLM 6 - Normality of Residuals
+#### CLM 6: Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=2)
 hist(model2$residuals,main="Model2 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
@@ -590,7 +617,7 @@ kable(model2_coefficients, booktabs = TRUE) %>%
 
 All of the coefficients are highly statistically significant except density when we look at heteroskedastic-robust errors: This indicates that density doesn't have much impact for western counties.
 
-#### coefficient-significance < Heteroskedastic-Robust Errors >
+#### Coefficient-Significance (Heteroskedastic-Robust Errors)
 ```{r}
 coeftest(model2, vcov = vcovHC, level = 0.05)
 ```
@@ -602,15 +629,15 @@ The adjusted $R^2$ for this model is `r summary(model2)$adj.r.squared`% which me
 
 The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is `r AIC(model2)` when only little information is lost.
 
-## Model3 - Sub-optimal Specification
+## Model 3 - Sub-optimal Specification
 
-Other than the variables we added in our model2, we would like to see how pctymle and taxpc has any impact on the crime rate. Also, from our wage variable analysis above, we would like to add wcon and wfed to our model. We are not using any interaction terms here and want to check how crimerate is varying across all regions for these variables.
+In addition to the variables included in model 2, we analyzed the effects of percentage of younge males and tax revenue per capita on crime rate. Next, based on the analysis of wages  above, we include wcon and wfed to our model due to thier stronger explainatory power as an example why they and other wages were not included in our optimal specification in model 2. We are not using any interaction terms here and want to check how crime rate is varying across all regions for these variables.
 
 $$
 \begin{aligned}
 log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \\
 &\beta_3log(polpc) +\beta_4log(density) + \beta_5(pctmin80) + \\
-\beta_6 log(pctymle) + \beta_7 log(taxpc) + \beta_8(wcon) + \beta_9(wfed) +u 
+&\beta_6 log(pctymle) + \beta_7 log(taxpc) + \beta_8(wcon) + \beta_9(wfed) +u 
 \end{aligned}
 $$
 
@@ -621,24 +648,29 @@ model3 = lm(log_crmrte ~ (prbarr) + (prbconv)+
 (model3$coefficients)
 ``` 
 
-#### Checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+### Intuition of the effects of potential data issues in county 115 on the model
+
+County 115 has high prbarr and low crime and low polpc and very low density this new model will allow us to see the effects on the model above. 
 ```{r}
 model3.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
               log_polpc +  log_density + pctmin80 
             + log_pctymle + log_taxpc + wcon + wfed, data = crime[crime$county != 115,])
 (model3.a$coefficients)
 ```
-From the coefficents summary, we can observe that the county 115 doesn't have any big impact on our coefficients.
+From the coefficents summary, we can observe that the county 115 doesn't have any big impact on our coefficients relative to the model when including county 115.
 
-###Testing the validity of the 6 assumptions of the CLM
-#### CLM1 - Linear model 
+### Testing the Validity of the 6 CLM assumptions
+
+#### CLM 1: Linear model 
 
 our views are identical to the previous model
 
-#### CLM2 - Random Sampling 
+#### CLM 2: Random Sampling 
+
 our views are identical to the previous model
 
-#### CLM3 - Multicollinearity
+#### CLM 3: Multicollinearity
+
 We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
 We do see strong correleation between wfed and wcon 'r cor(crime$wcon,crime$wfed)` along with polpc and density. 
 Let's also check how these variables alone are affecting crime rate. 
@@ -657,7 +689,7 @@ Based on pairwise correlation in the dependent variables and no variance inflati
 
 Is the assumption valid? YES
 
-#### CLM 4 - Zero conditional mean
+#### CLM 4: Zero conditional mean
 
 ```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
 plot(model3, which=1, cex.sub=0.75)
@@ -666,7 +698,7 @@ plot(model3, which=1, cex.sub=0.75)
 From the residuals vs fitted plot, the residuals are centered on 0 except with few values values. outside of that all values are close to zero. 
 Is the assumption valid? Highly Likely but not 100% sure
 
-#### CLM 5 - Homoscedasticity
+#### CLM 5: Homoscedasticity
 
 So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
 ```{r}
@@ -680,7 +712,8 @@ ncvTest(model3)
 Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
 Is the assumption valid? NO
 
-#### CLM 6 - Normality of Residuals
+#### CLM 6: Normality of Residuals
+
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model3, which=2)
 hist(model3$residuals,main="Model3 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
@@ -735,7 +768,7 @@ kable(model3_coefficients, booktabs = TRUE) %>%
 All of the coefficients are highly statistically significant for prbarr, prbconv,
 polpc, density and pctmin80 when we look at heteroskedastic-robust errors. But taxpc, pctymle, wcon and wfed doesn't have much signifance. But All these variables are jointly significant:
 
-#### coefficient-significance < Heteroskedastic-Robust Errors >
+#### Coefficient-Significance (Heteroskedastic-Robust Errors)
 ```{r}
 coeftest(model3, vcov = vcovHC, level = 0.05)
 ```
