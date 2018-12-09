@@ -813,14 +813,14 @@ waldtest(model3, model1, vcov = vcovHC)
 The Wald test reveals that variables added to model 3 jointly have no effect on crime rate.
 
 Now let's compare the coefficients of all models and also adding standard errors to the models:
-
+<!--
 ```{r, warning=FALSE}
 se.model1 <- sqrt(diag(vcovHC(model1)))
 se.model2 <- sqrt(diag(vcovHC(model2)))
 se.model3 <- sqrt(diag(vcovHC(model3)))
 stargazer(model1, model2, model3,
           type = "text",
-                   keep.stat = c("rsq", "n"),
+          keep.stat = c("rsq", "n"),
          title = "Linear Models Predicting Crime Rate",
          column.labels=c("Not good","Good","Average"),
           se = list(se.model1, se.model2, se.model3),
@@ -828,6 +828,24 @@ stargazer(model1, model2, model3,
           dep.var.caption  = "Measuring Crime Rate",
          dep.var.labels   = "Crime Rate",
           no.space = TRUE, align = TRUE)
+```
+-->
+
+```{r, results='asis'}
+se.model1 <- sqrt(diag(vcovHC(model1)))
+se.model2 <- sqrt(diag(vcovHC(model2)))
+se.model3 <- sqrt(diag(vcovHC(model3)))
+stargazer(model1,model2,model3,
+  title="Linear Models Predicting Crime Rate",
+  column.labels=c("Model 1","Model 2","Model 3"),
+  se = list(se.model1, se.model2, se.model3),
+  single.row=TRUE,
+  star.cutoffs = c(0.05, 0.01, 0.001),
+  dep.var.caption  = "Measuring Crime Rate",
+  keep.stat = c("adj.rsq","n"),
+  dep.var.labels   = "Crime Rate",
+  no.space = TRUE
+)
 ```
 
 
