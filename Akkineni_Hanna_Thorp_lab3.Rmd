@@ -32,7 +32,7 @@ suppressMessages(library(car))
 suppressMessages(library(stargazer))
 suppressMessages(library(lmtest))
 library(corrplot)
-
+library(sandwich)
 
 crime <- read.csv('crime_v2.csv',header = TRUE, sep = ",")
 
@@ -257,6 +257,7 @@ corrplot(corrmatrix, cl.pos = "b", diag = FALSE)
 
 Using the correlation matrix above we can see there are some strong correlations between Crime Rate (crmrte) and Population Density (density), Crime Rate and Urban, Other (likely east) counties and Percentage Minority from 1980 (pctmin80) and West and Percentage Minority, interestingly opposite correlations in those last two. We also see strong correlation with Populations Density and the Average Wage (avgwage) and several wages, specifically trade, financial, insurance real estate and federal employees.
 
+
 ```{r}
 barplot(c(sum(crime$other), sum(crime$central), sum(crime$west)),
        names.arg = c("East", "Central", "West"), main = "County locations")
@@ -289,21 +290,17 @@ Transforming the variables and storing them in the data frame
 
 ```{r}
 crime$log_crmrte <- log(crime$crmrte)
-crime$log_prbarr <- log(crime$prbarr)
-crime$log_prbconv <- log(crime$prbconv)
-crime$log_prbpris <- log(crime$prbpris)
-crime$log_avgsen <- log(crime$avgsen)
 crime$log_polpc <- log(crime$polpc)
 crime$log_density <- log(crime$density)
 crime$log_taxpc <- log(crime$taxpc)
-crime$log_pctmin80 <- log(crime$pctmin80)
 crime$log_mix <- log(crime$mix)
 crime$log_pctymle <- log(crime$pctymle)
 ```
 
 ## Model1 - Minimum Specification
 
-We anticipate that the crime rate depends on certainty of punishment and severity of punishment. As such, our base model includes variables that attempt to operationalize those concepts.The probability of arrest and probability of punishment operationalize certainty of punishment, while probability of prison and sentence length operationalize severity of punishment.
+Variables of Interest -> prbconv, prbarr, density, polpc.
+Based on the table above, we We anticipate that the crime rate depends on certainty of punishment and severity of punishment. Also, we anticipate that polpc and density has an impact on the crime rate. As such, our base model includes variables that attempt to operationalize those concepts
 
 $$
 \begin{aligned}
@@ -314,40 +311,80 @@ $$
 
 
 ```{r}
-model1 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+
-              log(prbpris) +  log(avgsen), data = crime)
+model1 = lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime)
+summary(model1$coefficients)
 ``` 
-#### Assumption - Linear model 
-```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-plot(model1, which=1, cex.sub=0.75)
+
+####checking if county 71 that has both west=central=1 has any impact on our model. 
+```{r}
+model1.a = lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime[crime$county != 71,])
+summary(model1.a$coefficients)
 ```
-From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
+We don't observe any major changes to our coefficients here, it could be because we didn't add any region variable in our model.
 
-#### Assumption - Random Sampling
-We do not have enough information about the sample selection to investigate this claim. We know that our dataset includes 90 counties and that North Carolina has only 100 counties, so our sample is close to approximating the population. However, we do not know how the counties in our dataset were selected. This uncertainty leads us to be more cautious in interpreting results from our models.
+####checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+```{r}
+model1.b = lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime[crime$county != 115,])
+summary(model1.b$coefficients)
+```
+From the coefficents summary, we can observe that the county 115 has a very high impact on our proposed model. This will vary our CLM assumptions.
 
-#### Assumption - Multicollinearity
+###Testing the validity of the 6 assumptions of the CLM
+#### CLM1 - Linear model 
+
+The model is specified such that the dependent variable is a linear function of the explanatory variables.
+We assume linearity in the dependent variable vs independent variables by default. 
+Is the assumption valid? Yes 
+
+#### CLM2 - Random Sampling 
+Since we got 90% of records from the total counties in North Carolina, we expect this assumption is valid. But to point out, the counties we didn't have can have high density or high policing and low probability of arrest or probability of conviction. This can change our interpretation of the crime rate. Since, we see that crime rate is normally distributed in the given data set, we anticipate that this would be same if we consider the entire population. 
+
+We can see that west has less number of counties compared to east or central. This can introduce some bias.But, if we look at the map of North Carolina, west side is narrower compared to central and east. So, this confirms that the bias is not a problem here.
+
+Is the assumption valid? Highly Likely
+
+#### CLM3 - Multicollinearity
 
 ```{r}
 # Find the maximum Correlation
 cor_model1 <- data.matrix(subset(crime,
-           select = c("log_crmrte","log_prbarr","log_prbconv","log_prbpris","log_avgsen")))
+           select = c("log_crmrte","prbarr","prbconv","log_polpc","log_density")))
 cor_model1 = cor(cor_model1)
 diag(cor_model1) = 0 # Zero the diagonal as we are uninterested in those.
-max(cor_model1)
+(cor_model1)
 ```
+From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except log_density and prbarr. Lets run the variable inflation factor and see if the `r cor(crime$log_density,crime$prbarr)` is a problem
+
 ```{r}
 vif(model1)
 ```
 Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
 
-#### Assumption - 4 Exogeneity (Zero Conditional Mean)
-From the residuals vs fitted plot, the red line is very influenced by the outliers on the ends, though it remains largely centered on zero, so we treat this as most-likely a valid assumption.
+Let's also check how these variables are jointly affecting crime rate. 
+```{r}
+model1.c = lm(log_crmrte ~ (prbarr) +  log_density, data = crime)
+f <- summary(model1.c )$fstatistic
+    (pf(f[1],f[2],f[3],lower.tail=F))
+```
+The p-value of the entire model indicates that both these variables are jointly significant.
 
-#### Additional Assumptions 
-#### Homoscedasticity
-From the same residuals vs fitted plot, we see it is very scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
+Is the assumption valid? YES
 
+#### CLM 4 - Zero conditional mean
+
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model1, which=1, cex.sub=0.75)
+```
+
+From the residuals vs fitted plot, the residuals are centered on 0 except with three values. outside of that all values are close to zero. 
+Is the assumption valid? Highly Likely but not 100% sure
+
+#### CLM 5 - Homoscedasticity
+
+So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
 ```{r}
 bptest(model1)
 ```
@@ -356,15 +393,20 @@ bptest(model1)
 ncvTest(model1)
 ```
 
-Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. We will need to return to this in future analyses to examine our ability to use robust standard errors or other compensating techniques in order to make inference from our models. 
+Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
+Is the assumption valid? NO
 
 #### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model1, which=2)
-hist(model1$residuals,main="Model1 Residuals")
+hist(model1$residuals,main="Model1 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
+curve(dnorm(x, mean=0, sd=sd(model1$residuals)), col="red", lwd=2, add=TRUE) 
 
 ```
-Other than a few outliers, the distribution is relatively normal for our given sample size. We treat this as a valid assumption.
+Other than a few outliers, the distribution is relatively normal for our given sample size. 
+We do see some outliers in the Q-Q plot indicating that there is some skew because of the outlier values at the ends. 
+Is the assumption valid? Higly likely but not 100% sure
+
 
 #### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
@@ -372,259 +414,216 @@ plot(model1, which=4)
 plot(model1, which=5)
 
 ```
-There are some influential values however cook's distance is within the bounds. 
+There are some influential values however cook's distance is within the bounds. At value 51 and 79. if we remove those values and plot the graph, . 
 
-#### Calculating AIC
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+model1.d <- lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime[c(-79,-51),])
+plot(model1.d, which=5)
+```
+
+Index 51 and 79 - 
+The density and polpc is very low  -> where as the crime rate and prb arr and prb conv is similar to other counties. Both these are western counties
+
+```{r}
+summary(model1)
+```
+
+```{r}
+model1_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
+                crime rate decreases by 1.92%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 55.5% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 11.1% when everything else stays the same")
+model1_coefficients <- data.frame("Model 1 Coefficients" = round(model1$coefficients, 4),
+                    "Interpretation" = model1_intrepreation)
+kable(model1_coefficients, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(3, width = "35em")
+```
+
+All of the coefficients are highly statistically significant when we look at heteroskedastic-robust errors:
+
+#### coefficient-significance < Heteroskedastic-Robust Errors >
+```{r}
+coeftest(model1, vcov = vcovHC, level = 0.05)
+```
+
+
+Model conclusion - 
+Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
+
+The adjusted $R^2$ for this model is 67.3% which means a lot of the the variations are explained by this model:
+
+```{r}
+summary(model1)$adj.r.squared
+```
+
 ```{r}
 AIC(model1)
 ```
-The AIC for this model is 110.0643.
+The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is 57.7 when only little information is lost.
+
 
 ## Model2 - Optimal Specification
 
 In additional to the explanatory variables introduced in our #Model1, we have decided to include the following variables in the model.
+`west`, `pctmin80`, and an interaction of `west` and `polpc`. This is because from the below table, west some how higher polpc and low crime rate. which is opposite to what we have observed in our model1. Also, we would ike to pctmin80 -> how crime rate changes with percent minority.
+
+```{r}
+barplot(c(sum(crime$east), sum(crime$central), sum(crime$west)),
+       names.arg = c("East", "Central", "West"), main = "County locations")
+
+crime$region <- ifelse(crime$west == 1, "west",
+                      ifelse(crime$central == 1, "central",
+                              ifelse(crime$east == 1, "east",        "other")))
+region = aggregate(density ~ region, data = crime, mean)
+region$polpc = aggregate(polpc ~ region, data = crime, mean)[2]
+region$crmrte = aggregate(crmrte ~ region, data = crime, mean)[2]
+colnames(region) = c("Region", "Density", "Police per Cap", "Crime Rate")
+
+#region
+kable(region)
+```
+
 
 $$
 \begin{aligned}
-log(crmrte) &=\beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\ 
-&\beta_4log(avgsen)+ \beta_5log(polpc) + \beta_6log(taxpc) + \\ 
-&\beta_7log(density)+\beta_8log(pctymle)+\beta_9log(pctmin80)+ u
+log(crmrte) &=\beta_0 + \beta_1(prbarr) + \beta_2(prbconv) + \beta_3log(polpc) + \\ 
+&\beta_4log(density)+ \beta_5(pctmin80) + \beta_6west + \\ 
+&\beta_7west*log(polpc)+ u
 \end{aligned}
 $$
 ```{r}
-model2 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) +  log(avgsen)
-            + log(polpc) + log(taxpc)+ log(density) +  log(pctymle) + log(pctmin80), data = crime)
+
+model2 = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+              west + west * log_polpc, data = crime)
+(model2$coefficients)
+``` 
+
+####checking if county 71 that has both west=central=1 has any impact on our model. 
+```{r}
+model2.a = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+              west + west * log_polpc, data = crime[crime$county != 71,])
+(model2.a$coefficients)
 ```
-#### Checking if our Assumptions are valid in the model- 
-#### Assumption - Linear model 
+There is a very small change in the coefficient of west, 2.09-1.81 ~ 0.3 - but almost all other coefficients doesn't change much
 
-```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-plot(model2, which=1, cex.sub=0.75)
+####checking if county 115 that has high prbarr and low crime and low polpc and very low density has any impact on our model. 
+```{r}
+model2.b = lm(log_crmrte ~ (prbarr) + (prbconv)+ log_polpc + log_density + pctmin80 + 
+              west + west * log_polpc, data = crime[crime$county != 115,])
+(model2.b$coefficients)
 ```
-From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
+From the coefficents summary, we can observe that the county 115 deosnt have a very high impact on our proposed model. but this changed alot in our previous model. This could be due to low crime rate and high polpc in western regions.
 
-#### Assumption - Random Sampling
-Our views are identical to the previous specification.
+###Testing the validity of the 6 assumptions of the CLM
+#### CLM1 - Linear model 
 
-#### Assumption - Multicollinearity
+our views are identical to the previous model
+
+#### CLM2 - Random Sampling 
+our views are identical to the previous model
+
+#### CLM3 - Multicollinearity
 
 ```{r}
 # Find the maximum Correlation
-cor_model2 <- data.matrix(subset(crime, 
-   select = c("log_crmrte","log_prbarr","log_prbconv","log_prbpris",
-    "log_avgsen",   "log_polpc","log_taxpc","log_density", "log_pctymle","log_pctmin80")))
-cor_model2 = cor(cor_model2)
-diag(cor_model2) = 0 # Zero the diagonal as we are uninterested in those.
-max(cor_model2)
+cor_model2 <- data.matrix(subset(crime,
+           select = c("log_crmrte","prbarr","prbconv","log_polpc","log_density","pctmin80","west")))
+cor(cor_model2)
 ```
+From the above matrix, we can see that crime rate is correlated with all the variables, and all other independent variables are very less correlated with each other except west and pctmin80. Lets run the variable inflation factor and see if the `r cor(crime$west,crime$pctmin80)` is a problem
 ```{r}
 vif(model2)
 ```
 Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
 
-#### Assumption - Exogeneity (Zero Conditional Mean)
-From the residuals vs fitted plot, the red line is influenced by outliers on either end, however the zero conditional mean appears to hold.
+Is the assumption valid? YES
 
-#### Additional Assumptions - Homoscedasticity
-From the same residuals Vs fitted plot, we see that it is scattered with extreme outliers. It is not easy to determine homoscedasticity from this plot only. 
-Running some additional tests
+#### CLM 4 - Zero conditional mean
+
+```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
+plot(model2, which=1, cex.sub=0.75)
+```
+
+From the residuals vs fitted plot, the residuals are centered on 0 except few values values. outside of that all values are close to zero. 
+Is the assumption valid? Highly Likely but not 100% sure
+
+#### CLM 5 - Homoscedasticity
+
+So, it is not easy to determine Homoscedasticity from the residuals vs fitted values plot alone. Running some additional tests.
 ```{r}
 bptest(model2)
 ```
+
 ```{r}
 ncvTest(model2)
 ```
-Both tests are showing large p-values showing that we fail to reject the null hypothesis. 
 
-####Normality of Residuals
+Both tests are showing small p-values showing that we have to reject the hypothesis. Homoscedasticity does not appear to be a valid assumption here indicating that our standard errors may not be used for inference. 
+Is the assumption valid? NO
+
+#### Normality of Residuals
 ```{r , fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=2)
-hist(model2$residuals,main="Model2 Residuals")
-```
-Other than a few outliers, the distribution is relatively normal for our given sample size, so we treat it as a valid assumption.
+hist(model2$residuals,main="Model2 Residuals", breaks = seq(-3.75, 3.75, 0.5), freq=FALSE)
+curve(dnorm(x, mean=0, sd=sd(model2$residuals)), col="red", lwd=2, add=TRUE) 
 
-####Cook's Distance:
+```
+Other than a few outliers, the distribution is relatively normal for our given sample size. 
+We do see some outliers in the Q-Q plot indicating that there is some skew because of the outlier values at the ends. 
+Is the assumption valid? Higly likely but not 100% sure
+
+#### Cook's Distance:
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
 plot(model2, which=4)
 plot(model2, which=5)
+
 ```
-There are some influential values [24,51,79] however cook's distance is within bounds.
+There are some influential values however cook's distance is within the bounds. At value 90, 51 and 79. if we remove those values and plot the graph, . 
+
+```{r, fig.height=3, fig.width=3, fig.show='hold'}
+model2.c <- lm(log_crmrte ~ (prbarr) + (prbconv)+
+              log_polpc +  log_density, data = crime[c(-51,-79,-90),])
+plot(model2.c, which=5)
+```
+Index 51, 79 and 90 -
+The density and polpc is very low  -> where as the crime rate and prb arr and prb conv and pctmin80 is similar to other counties. ANd all are western counties.
+
+```{r}
+summary(model2)
+```
+
+```{r}
+model2_intrepreation <-  c("","For approximately each 1 unit increase in probability of arrest,
+                crime rate decreases by 1.82%","For approximately each 1 unit increase in probability of conviction,crime rate decreases by 0.69%", "For a 1% increase in polpc, crime rate increases by 73% when everything else stays the same","For an increase of one unit (100 people per square mile) in density,crime rate increases by 10.4% when everything else stays the same","For every 1 unit increase in percent minority, crime rate increases by 1%","For all western counties crime rate decreases by 1.81% compared to other counties","For all western counties, a 1% increase in polpc reduces the crime rate by 0.26%")
+model2_coefficients <- data.frame("Model 2 Coefficients" = round(model2$coefficients, 4),
+                    "Interpretation" = model2_intrepreation)
+kable(model2_coefficients, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(3, width = "35em")
+```
+
+All of the coefficients are highly statistically significant except density when we look at heteroskedastic-robust errors: This indicates that density doesn't have much impact for western counties.
+
+#### coefficient-significance < Heteroskedastic-Robust Errors >
+```{r}
+coeftest(model2, vcov = vcovHC, level = 0.05)
+```
+
+
+Model conclusion - 
+Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. 
+
+The adjusted $R^2$ for this model is 82.2% which means a lot of the the variations are explained by this model:
+
+```{r}
+summary(model2)$adj.r.squared
+```
 
 ```{r}
 AIC(model2)
 ```
-The AIC for this model is 30.5825
+The Akaike information criterion (AIC) indicates that the relative quality of predicting crime rate based on our variables is 9.02 when only little information is lost.
 
-## Model3 - Optimal-2 Specification [Best-Fit model]
-
-After observing Model2 - We found that tax and percent male doesn't influence crime extensively, so we remove those in our best-fit model
-
-$$
-\begin{aligned}
-log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\
-&\beta_4log(avgsen)+ \beta_5log(polpc) + \beta_6log(density)+\beta_7log(pctmin80)+ u \\
-\end{aligned}
-$$
-```{r }
-model3 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(polpc) +
-              log(density)  + log(pctmin80) +log(prbpris) + log(avgsen) , data = crime)
-```
-#### Checking if our Assumptions are valid in the model- 
-#### Assumption - Linear model 
-```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-plot(model3, which=1, cex.sub=0.75)
-```
-From the residuals vs fitted plot, we don't see a non-linear relatonship, so we treat this as a valid assumption.
-
-#### Assumption - Random Sampling
-Our views are identical to the previous model.
-
-#### Assumption - Multicollinearity
-```{r}
-# Find the maximum Correlation
-cor_model3 <- data.matrix(subset(crime,
-                                 select = c("log_crmrte","log_prbarr","log_prbconv", 
-                                            "log_avgsen","log_polpc","log_density","log_pctmin80")))
-cor_model3 = cor(cor_model3)
-diag(cor_model3) = 0 # Zero the diagonal as we are uninterested in those.
-max(cor_model3)
-```
-```{r}
-vif(model3)
-```
-Based on pairwise correlation and variance inflation factors, we do not detect evidence of multicollinearity negatively impacting our specification.
-
-#### Assumption - Exogeneity (Zero Conditional Mean)
-From the residuals vs fitted plot, the red line is very influenced by the outlierson either end, however the zero conditional mean appears to hold.
-
-#### Additional Assumptions - Homoscedasticity
-From the same residuals vs fitted plot, we see it is scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
-```{r}
-bptest(model3)
-```
-```{r}
-ncvTest(model3)
-```
-Both tests are showing insignificant p-values showing that we fail to reject the null hypothesis of homoskedasticity. 
-
-#### Normality of Residuals
-```{r , fig.height=3, fig.width=3, fig.show='hold'}
-plot(model3, which=2)
-hist(model3$residuals,main="Model3 Residuals")
-```
-Other than a few outliers, the distribution is relatively normal for our given sample size, so we treat this as a valid assumption.
-
-#### Cook's Distance:
-```{r, fig.height=3, fig.width=3, fig.show='hold'}
-plot(model3, which=4)
-plot(model3, which=5)
-```
-There are some influential values [6,51,79] however cook's distance is within the bounds.
-
-#### Calculating AIC
-```{r}
-AIC(model3)
-```
-The AIC for this model is 26.9529
-
-## Model4 - Using all variables Specification
-
-The team wanted to check the robustness of prior model specifications by creating a model with maximal inclusion from our dataset to see if estimated relationships shift.
-$$
-\begin{aligned}
-log(crmrte) &= \beta_0 + \beta_1log(prbarr) + \beta_2log(prbconv) + \beta_3log(prbpris) + \\ 
-  &\beta_4log(avgsen)+ \beta_5log(polpc) + \beta_6log(taxpc)+\beta_7log(west) + \\
-  &\beta_8log(central) + \beta_9log(urban) + \beta_10log(pctmin80) +\beta_11log(wcon)+ \beta_12og(wtuc) + \\
-  &\beta_13log(wtrd)+\beta_14log(wfir)+ \beta_15log(wser) + \beta_16log(wmfg) + \beta_17log(wfed) + \\
-  &\beta_18log(wsta)+ \beta_19log(wloc) + \beta_20log(mix)+\beta_21log(density) + \beta_22log(pctymle) + u \\
-\end{aligned}
-$$
-
-```{r}
-model4 = lm(log(crmrte) ~ log(prbarr) + log(prbconv)+ log(prbpris) + 
-              log(avgsen)  + log(polpc) +log(density) + log(taxpc) + 
-              west+central + urban + log(pctmin80) + wcon + wtuc + 
-              wtrd + wfir + wser + wmfg + wfed + wsta + wloc + 
-              log(mix) + log(pctymle), data = crime)
-```
-#### Checking if our Assumptions are valid in the model- 
-#### Assumption - Linear model 
-```{r , fig.height=3, fig.width=4.5, fig.align='center', fig.show='hold'}
-plot(model4, which=1, cex.sub=0.75)
-```
-#### Assumption - Random Sampling
-Our views are identical to the previous model.
-
-#### Assumption - Multicollinearity
-```{r}
-vif(model4)
-```
-Computing VIF indicates that there is no multicollinearity. 
-
-#### Assumption - Exogeneity (Zero Conditional Mean)
-From the residuals vs fitted plot, the red line is very influenced by the outliers on either end, but the zero conditional mean appears to hold.
-
-#### Additional Assumptions - Homoscedasticity
-From the same residuals Vs fitted plot, we see it is scattered with extreme outliers. So, it is not easy to determine Homoscedasticity from this plot only. 
-```{r}
-bptest(model4)
-```
-```{r}
-ncvTest(model4)
-```
-Both tests are showing large p-values showing that we fail to accept the null hypothesis. 
-
-#### Normality of Residuals
-```{r, fig.height=3, fig.width=3, fig.show='hold'}
-plot(model4, which=2)
-hist(model4$residuals,main="Model4 Residuals")
-```
-Other than a few outliers, the distribution is relatively normal for our given sample size. 
-
-#### Cook's Distance:
-```{r, fig.height=3, fig.width=3, fig.show='hold'}
-plot(model4, which=4)
-plot(model4, which=5)
-```
-There are some influential values [25,79,84] however cook's distance is within bounds.
-#### Calculating AIC
-```{r}
-AIC(model4)
-```
-The AIC for this model is 31.94569
-
-```{r, results='asis'}
-stargazer(model1, model2,model3, model4, type = "latex",
-         report = "vc", # Don't report errors, since we haven't covered them
-         title = "Linear Models Predicting Crime Rate",
-         keep.stat = c("rsq", "n"),
-         omit.table.layout = "n",
-         column.labels=c("Not good","Good","Better","Using All"),
-         dep.var.caption  = "Measuring Crime Rate",
-         dep.var.labels   = "Crime Rate")
-```
-#### Model1 -
-Only 41.6% of crime rate is being explained by our model. 
-prbarr, prbconv are shown to have a negative effect on crime, while the other independent variables prbpris and avgsen have a postive effect on crime.
-
-We do not want to overinterpret the model as assumptions of homoskedasticity appear to be violated. If we accept the model at face value, we would see that the estimators for the probability of arrest and probability of conviction are statistically significantly different from zero. 
-
-#### Model 2 - 
-78.4% of crime rate is being explained by this model. 
-Polpc, Density and Pctmin80 appear to have a positive effect on crime. 
-While other independent variables are estimated as having a negative effect on crime.
-
-#### Model 3 -
-78.3% of crime rate is being explained by this model. 
-
-This says that crime rate decreases if more people are arrested, convicted, sentenced in prison 
-
-#### Model 4 -
-83.5% of crime rate is being explained by this model
-Using all variables, we got a better AIC compared to Model 1 and very close to Model 2- but it is not a best fit model
-
-#### Best-Fit Model
-Based on our analysis - we found that our Model3 is the best fit model with low AIC value 26.9529. 
 
 # Omitted Variables
 
