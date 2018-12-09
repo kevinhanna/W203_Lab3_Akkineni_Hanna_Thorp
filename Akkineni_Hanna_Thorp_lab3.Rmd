@@ -357,8 +357,8 @@ Since we got 90% of records from the total counties in North Carolina, we expect
 
 ```{r}
 cor_model1 <- data.matrix(subset(crime,
-                select = c("prbarr","prbconv","log_polpc","log_density")))
-cor(cor_model1))
+ select = c("prbarr","prbconv", "polpc", "density", "log_polpc","log_density")))
+(cor(cor_model1))
 ```
 
 We can see from the previous correlation matrix, Crime Rate is highly correlated with the variables in our model. We also see that probability of arrest and density are highly correlated: `r cor(crime$prbarr,crime$density)`.
@@ -550,8 +550,9 @@ Our views are identical to the previous model
 
 ```{r}
 cor_model2 <- data.matrix(subset(crime,
-                select = c("prbarr","prbconv","log_polpc","log_density","pctmin80","west")))
-cor(cor_model2))
+           select = c("prbarr","prbconv", "polpc", "density",  
+                      "log_polpc", "log_density", "pctmin80", "west")))
+(cor(cor_model2))
 ```
 
 We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
