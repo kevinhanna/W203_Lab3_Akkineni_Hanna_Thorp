@@ -358,7 +358,8 @@ Since we got 90% of records from the total counties in North Carolina, we expect
 ```{r}
 cor_model1 <- data.matrix(subset(crime,
  select = c("prbarr","prbconv", "polpc", "density", "log_polpc","log_density")))
-(cor(cor_model1))
+cor_model1_out = round(cor(cor_model1), 4)
+kable(cor_model1_out)
 ```
 
 We can see from the previous correlation matrix, Crime Rate is highly correlated with the variables in our model. We also see that probability of arrest and density are highly correlated: `r cor(crime$prbarr,crime$density)`.
@@ -552,7 +553,8 @@ Our views are identical to the previous model
 cor_model2 <- data.matrix(subset(crime,
            select = c("prbarr","prbconv", "polpc", "density",  
                       "log_polpc", "log_density", "pctmin80", "west")))
-(cor(cor_model2))
+cor_model2_out = round(cor(cor_model2), 4)
+kable(cor_model2_out)
 ```
 
 We can see from the above correlation matrix, Crime Rate is highly correlated with the variables in our model. 
@@ -693,6 +695,14 @@ Our views are identical to the previous model.
 Our views are identical to the previous model.
 
 #### CLM 3: Multicollinearity
+
+```{r}
+cor_model3 <- data.matrix(subset(crime,
+ select = c("prbarr", "prbconv", "log_polpc", "log_density", "pctmin80", 
+            "log_pctymle", "log_taxpc", "wcon", "wfed")))
+cor_model3_out = round(cor(cor_model3), 3)
+kable(cor_model3_out)
+```
 
 We can see from the above correlation matrix, crime rate is highly correlated with the variables in our model. 
 We do see strong correleation between wfed and wcon `r cor(crime$wcon,crime$wfed)` along with polpc and density. 
