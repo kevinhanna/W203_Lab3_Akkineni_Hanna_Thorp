@@ -170,7 +170,7 @@ The log transformed crime rate has a single outlier, it is not significant enoug
 
 #### People per Square Mile
 
-Both tax revenue per capita and average wages are positively correlated with people per squre mile.  This is relavent since those are positively correlated with crime rate, the opposite of what we would expect.  Since they are correlated with people per square mile, which is expecantly strongly possitively correlated with crime rate, this will likely account for some of the correlation in tax revenue per capita and average wages, along with some ommited variables discussed later in the analysis. 
+Both tax revenue per capita and the average wages are positively correlated with people per square mile.  This is relavent since those are positively correlated with crime rate, the opposite of what we would expect.  However, since they are correlated with people per square mile, which is, as expected, strongly possitively correlated with crime rate, this will likely account for some of the correlation in tax revenue per capita and average wages, along with some ommited variables discussed later in the analysis. 
 
 ```{r echo = FALSE, results = 'asis'}
 kable(codebook[-c(1:3,15:23), c(2,3,5,7)], "latex", longtable = TRUE, booktabs = TRUE, caption = "Explanatory Variable Summary") %>%
