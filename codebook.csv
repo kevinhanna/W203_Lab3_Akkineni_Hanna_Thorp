@@ -1,28 +1,28 @@
-Observation,Variable,Label,Notes
-1,county,county identifier,
-2,year,1987,
-3,crmrte,crimes committed per person,
-4,prbarr,'probability' of arrest,"County 115 has a value of 1.09, which is not a possible probability."
-5,prbconv,'probability' of conviction,"There are 10 observations greater than 1, which is not a possible probability. "
-6,prbpris,'probability' of prison sentence,
-7,avgsen,"avg. sentence, days",
-8,polpc,police per capita,
-9,density,people per sq. mile,
-10,taxpc,tax revenue per capita,
-11,west,=1 if in western N.C.,
-12,central,=1 if in central N.C.,
-13,urban,=1 if in SMSA,
-14,pctmin80,"perc. Minority, 1980",
-15,wcon,"weekly wage, construction",
-16,wtuc,"wkly wge, trns, util, commun",
-17,wtrd,"wkly wge whlesle, retail, trade",
-18,wfir,"wkly wge, fin, ins, real est",
-19,wser,"wkly wge, service industry",
-20,wmfg,"wkly wge, manufacturing",
-21,wfed,wkly wge fed employees,
-22,wsta,wkly wge state employees,
-23,wloc,wkly wge local gov emps,
-24,mix,offense mix: face-to-face/other,
-25,pctymle,percent young male,
-26,east,Created: observations not in west or central,
-27,avgwage,Created: mean of all wages,
+Observation,Variable,Label,Expectation,Corr crmrte,Corr log_crmrte,Summary
+1,county,county identifier,,,,
+2,year,1987,,,,
+3,crmrte,crimes committed per person,,,,
+4,prbarr,'probability' of arrest,Negative correlation,-0.395283,-0.4727669,"Positively correlated, with a possitive skew"
+5,prbconv,'probability' of conviction,Negative correlation,-0.3859656,-0.4468136,"Positively correlated, with a possitive skew"
+6,prbpris,'probability' of prison sentence,Negative correlation,0.0479954,0.02147024,"Slight negative correlation, with a negative skew"
+7,avgsen,"avg. sentence, days",Negative correlation,0.01979653,-0.04936931,
+8,polpc,police per capita,Negative correlation,0.1672816,0.0104058,
+9,density,people per sq. mile,Positive correlation,0.7283706,0.6330234,"High positive correlation, with a strong positive skew"
+10,taxpc,tax revenue per capita,Negative correlation,0.4487151,0.3583234,"Positive correlation, with positive skew, positively correlated to density"
+11,west,=1 if in western N.C.,,-0.3455515,-0.4143996,Negative correlation
+12,central,=1 if in central N.C.,,0.1658803,0.1847192,Positive correlation
+13,urban,=1 if in SMSA,,0.6150631,0.4914645,Positive correlation
+14,pctmin80,"perc. Minority, 1980",,0.1816506,0.2329182,Positive correlation
+15,wcon,"weekly wage, construction",,,,
+16,wtuc,"wkly wge, trns, util, commun",,,,
+17,wtrd,"wkly wge whlesle, retail, trade",,,,
+18,wfir,"wkly wge, fin, ins, real est",,,,
+19,wser,"wkly wge, service industry",,,,
+20,wmfg,"wkly wge, manufacturing",,,,
+21,wfed,wkly wge fed employees,,,,
+22,wsta,wkly wge state employees,,,,
+23,wloc,wkly wge local gov emps,,,,
+24,mix,offense mix: face-to-face/other,Positive correlation,-0.1320004,-0.1247344,
+25,pctymle,percent young male,Positive correlation,0.2903397,0.2781547,"Positively correlated, with a possitive skew"
+26,east,Created: observations not in west or central,,0.1650083,0.2079404,Positive correlation
+27,avgwage,Created: mean of all wages,Negative correlation,0.3804003,0.3142274,"Positive correlation, with positive skew, positively correlated to density"
