@@ -533,7 +533,7 @@ plot(model2, which=5)
 ```
 
 Observations 51, 79 and 90 are influential.  
-The density and polpc are very low, whereas the crime rate, probability of arrest, probability of confiction and the percent of minority are similar to other counties. These outliers are all in western counties.  
+The density and polpc are very low, whereas the crime rate, probability of arrest, probability of conviction and the percent of minority are similar to other counties. These outliers are all in western counties.  
 If we remove those values and plot the graph: 
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
@@ -810,7 +810,7 @@ crime\_rate &= \beta_0 + \beta_1crty\_punish + \beta_2svrty\_punish + \beta_3pov
 \end{aligned}
 $$
 
-Unfortunately, we are unable to observe virtually all of these concepts.  
+We believe it should be relatively strightforward to add in variables operationalizing education, poverty rate, real wage, proportion of population that is young, the low skill unemployment rate, the proportion of the population that previously committed a crime, and the portion that was previously imprisoned. Unfortunately, we are unable to observe the rest of our desired concepts.  
 
 Some concepts have been operationalized in our dataset. For example, certainty of punishment has been operationalized through three variables: 1) the percent of the population which are police, 2) the ratio of arrests to crimes, and 3) the ratio of convictions to arrest. This is among the most effective operationlizations in this dataset. Severity of punishment is also operationalized  through 1) the proportion of convictions that result in a prison sentence and 2) the average length of a prison sentence. Nominal wages are operationalized in the dataset with average wages for certain industry groupings. None of poverty rate, education, social cohesion, weapon availability, cost of living, or the low skill unemployment rate are operationalized within this dataset.  
 
