@@ -532,8 +532,8 @@ plot(model2, which=4)
 plot(model2, which=5)
 ```
 
-Observations 51, 79 and 90 are influential-
-The density and polpc are very low  -> where as the crime rate and prb arr and prb conv and pctmin80 is similar to other counties. And all of these are western counties.
+Observations 51, 79 and 90 are influential.  
+The density and polpc are very low, whereas the crime rate, probability of arrest, probability of confiction and the percent of minority are similar to other counties. These outliers are all in western counties.  
 If we remove those values and plot the graph: 
 
 ```{r, fig.height=3, fig.width=3, fig.show='hold'}
@@ -572,7 +572,7 @@ coeftest(model2, vcov = vcovHC, level = 0.05)
 ```
 
 Model conclusion - 
-Probability of arr has more impact on crime rate - it is easier to get arrested than convicted. From the arrests, we can see even 50% are not convicted. Also, We observed that crimerate is low for western counties and high for eastern counties. This confirms our intuition.
+Probability of arrest has more impact on crime rate. One is more likely to be arrested than convicted, which is expected as an arrest is usually nessisary for a trial. From the arrests, we can see 50% are not convicted. Also, We observed that crime rate is low for western counties and high for eastern counties. This confirms our intuition.
 
 The adjusted $R^2$ for this model is `r summary(model2)$adj.r.squared`% which means a lot of the variation of the dependent variable is explained by this model.
 

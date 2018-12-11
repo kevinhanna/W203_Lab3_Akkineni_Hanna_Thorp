@@ -5,7 +5,7 @@ Observation,Variable,Label,Expectation,Cor crmrte,Cor log_crmrte,Summary
 4,prbarr,'probability' of arrest,Negative correlation,-0.395283,-0.4727669,"Positively correlated, with a possitive skew"
 5,prbconv,'probability' of conviction,Negative correlation,-0.3859656,-0.4468136,"Positively correlated, with a possitive skew"
 6,prbpris,'probability' of prison sentence,Negative correlation,0.0479954,0.02147024,"Slight negative correlation, with a negative skew"
-7,avgsen,"avg. sentence, days",Negative correlation,0.01979653,-0.04936931,Positive correlation
+7,avgsen,"avg. sentence, days",Negative correlation,0.01979653,-0.04936931,Slight correlation.
 8,polpc,police per capita,Negative correlation,0.1672816,0.0104058,Positive correlation
 9,density,people per sq. mile,Positive correlation,0.7283706,0.6330234,"High positive correlation, with a strong positive skew"
 10,taxpc,tax revenue per capita,Negative correlation,0.4487151,0.3583234,"Positive correlation, with positive skew, positively correlated to density"
